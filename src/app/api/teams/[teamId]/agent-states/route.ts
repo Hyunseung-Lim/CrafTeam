@@ -203,6 +203,14 @@ export async function POST(
 
     console.log(`📋 에이전트 ${agentId} 상태 변경 요청`);
 
+    // "Me" 사용자 요청은 스킵 (사용자는 에이전트가 아님)
+    if (agentId === "Me") {
+      return NextResponse.json({
+        success: true,
+        message: "User state change skipped - not an agent",
+      });
+    }
+
     // reset_all_agents 액션 처리
     if (action === "reset_all_agents") {
       console.log(`🔄 모든 에이전트 상태 초기화 요청`);

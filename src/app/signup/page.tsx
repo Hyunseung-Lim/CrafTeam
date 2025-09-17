@@ -25,27 +25,27 @@ export default function SignUpPage() {
     const confirmPassword = formData.get("confirmPassword") as string;
     const name = formData.get("name") as string;
 
-    // 클라이언트 유효성 검사
+    // Client-side validation
     if (!name || name.trim().length === 0) {
-      setError("이름을 입력해주세요.");
+      setError("Please enter your name.");
       setIsLoading(false);
       return;
     }
 
     if (password !== confirmPassword) {
-      setError("비밀번호가 일치하지 않습니다.");
+      setError("Passwords do not match.");
       setIsLoading(false);
       return;
     }
 
     if (password.length < 6) {
-      setError("비밀번호는 최소 6자 이상이어야 합니다.");
+      setError("Password must be at least 6 characters.");
       setIsLoading(false);
       return;
     }
 
     try {
-      // 1. 회원가입 API 호출
+      // Call signup API
       const signupResponse = await fetch("/api/auth/signup", {
         method: "POST",
         headers: {
@@ -61,11 +61,11 @@ export default function SignUpPage() {
       const signupData = await signupResponse.json();
 
       if (!signupResponse.ok) {
-        setError(signupData.error || "회원가입에 실패했습니다.");
+        setError(signupData.error || "Sign up failed.");
         return;
       }
 
-      // 2. 회원가입 성공 시 자동 로그인
+      // Auto login after successful signup
       const result = await signIn("credentials", {
         email,
         password,
@@ -73,15 +73,12 @@ export default function SignUpPage() {
       });
 
       if (result?.error) {
-        setError(
-          "회원가입은 완료되었으나 로그인에 실패했습니다. 다시 로그인해주세요."
-        );
+        setError("Sign up completed but login failed. Please try logging in again.");
       } else {
-        // 성공 시 메인 페이지로 이동
         router.push("/");
       }
     } catch (error) {
-      setError("회원가입 중 오류가 발생했습니다.");
+      setError("An error occurred during sign up.");
     } finally {
       setIsLoading(false);
     }
@@ -91,23 +88,23 @@ export default function SignUpPage() {
     <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-bold">회원가입</CardTitle>
+          <CardTitle className="text-2xl font-bold">Sign Up</CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={onSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="name">이름</Label>
+              <Label htmlFor="name">Name</Label>
               <Input
                 id="name"
                 name="name"
                 type="text"
-                placeholder="홍길동"
+                placeholder="John Doe"
                 required
                 disabled={isLoading}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="email">이메일</Label>
+              <Label htmlFor="email">Email</Label>
               <Input
                 id="email"
                 name="email"
@@ -118,7 +115,7 @@ export default function SignUpPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password">비밀번호</Label>
+              <Label htmlFor="password">Password</Label>
               <Input
                 id="password"
                 name="password"
@@ -129,7 +126,7 @@ export default function SignUpPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="confirmPassword">비밀번호 확인</Label>
+              <Label htmlFor="confirmPassword">Confirm Password</Label>
               <Input
                 id="confirmPassword"
                 name="confirmPassword"
@@ -145,16 +142,16 @@ export default function SignUpPage() {
               </div>
             )}
             <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? "가입 중..." : "회원가입"}
+              {isLoading ? "Signing up..." : "Sign Up"}
             </Button>
           </form>
           <div className="mt-6 text-center text-sm">
-            <span className="text-gray-600">이미 계정이 있으신가요? </span>
+            <span className="text-gray-600">Already have an account? </span>
             <Link
               href="/login"
               className="font-semibold text-gray-900 hover:underline"
             >
-              로그인
+              Login
             </Link>
           </div>
         </CardContent>

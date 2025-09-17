@@ -512,7 +512,7 @@ async function updateMemoryForIdeaGeneration(
       const requesterName = await getAgentNameById(requesterId);
       const newReflection = await generateSelfReflection(
         memory.longTerm.self,
-        `${requesterName}의 요청에 따라 "${idea.content.object}"라는 아이디어를 생성했습니다. 다른 팀원의 요청에 부응하여 도움을 줄 수 있어서 뿌듯했습니다. 앞으로도 팀워크를 중시하며 협력적인 자세를 유지하고 싶습니다.`,
+        `Generated the idea "${idea.content.object}" based on ${requesterName}'s request. I felt proud to be able to help by responding to a teammate's request. I want to continue maintaining a cooperative attitude while valuing teamwork.`,
         "requested_idea_generation"
       );
       memory.longTerm.self = newReflection;
@@ -526,7 +526,7 @@ async function updateMemoryForIdeaGeneration(
     if (memory.longTerm.relations[relationKey]) {
       memory.longTerm.relations[relationKey].interactionHistory.push({
         action: "generated_idea",
-        content: `${authorName}이 "${idea.content.object}"라는 아이디어를 생성했다.`,
+        content: `${authorName} generated the idea "${idea.content.object}".`,
         timestamp: new Date().toISOString(),
       });
 
@@ -940,14 +940,14 @@ async function createInitialMemory(
     let otherAgentProfile: any;
 
     if (member.isUser) {
-      otherAgentId = "나";
-      otherAgentName = "나";
+      otherAgentId = "Me";
+      otherAgentName = "Me";
       // Check if user is actually the leader
-      const userRole = member.isLeader ? "팀 리더" : "팀원";
-      const userSkills = member.isLeader ? "리더십" : "협업";
+      const userRole = false /* member.isLeader removed */ ? "팀 리더" : "팀원";
+      const userSkills = false /* member.isLeader removed */ ? "리더십" : "협업";
       otherAgentProfile = {
-        id: "나",
-        name: "나",
+        id: "Me",
+        name: "Me",
         professional: userRole,
         personality: "알 수 없음",
         skills: userSkills,
@@ -973,7 +973,7 @@ async function createInitialMemory(
         (rel.from === otherAgentName && rel.to === agentProfile.name)
     );
 
-    const relationKey = member.isUser ? "나" : otherAgentId;
+    const relationKey = member.isUser ? "Me" : otherAgentId;
     relations[relationKey] = {
       agentInfo: otherAgentProfile,
       relationship: relationship ? relationship.type : "NULL",
@@ -1000,7 +1000,7 @@ async function createInitialMemory(
  * 에이전트 이름 조회 헬퍼
  */
 async function getAgentNameById(agentId: string): Promise<string> {
-  if (agentId === "나") return "나";
+  if (agentId === "Me") return "Me";
 
   const agent = await getAgentById(agentId);
   return agent?.name || `에이전트 ${agentId}`;
@@ -1010,7 +1010,7 @@ async function getAgentNameById(agentId: string): Promise<string> {
  * 관계 키 생성 헬퍼
  */
 function getRelationKey(agentId: string): string {
-  return agentId === "나" ? "나" : agentId;
+  return agentId === "Me" ? "Me" : agentId;
 }
 
 // Legacy compatibility functions
@@ -1034,7 +1034,7 @@ export async function handleFeedbackSessionMessage(payload: {
     payload;
 
   // 사용자의 경우 메모리 업데이트하지 않음
-  if (participantId === "나") {
+  if (participantId === "Me") {
     return;
   }
 
@@ -1060,9 +1060,9 @@ export async function handleFeedbackSessionMessage(payload: {
       // 에이전트 이름 조회
       const senderName =
         message.sender === participantId
-          ? memory.shortTerm.feedbackSessionChat.targetAgentName || "나"
+          ? memory.shortTerm.feedbackSessionChat.targetAgentName || "Me"
           : (async () => {
-              if (message.sender === "나") return "나";
+              if (message.sender === "Me") return "Me";
               const senderAgent = await getAgentById(message.sender);
               return senderAgent?.name || message.sender;
             })();
@@ -1123,7 +1123,7 @@ async function handleFeedbackSessionEnded(payload: {
 
   for (const participant of session.participants) {
     // 사용자의 경우 메모리 업데이트하지 않음
-    if (participant.id === "나") {
+    if (participant.id === "Me") {
       continue;
     }
 
@@ -1181,7 +1181,7 @@ async function handleFeedbackSessionEnded(payload: {
       for (const otherParticipant of session.participants) {
         if (
           otherParticipant.id !== participant.id &&
-          otherParticipant.id !== "나"
+          otherParticipant.id !== "Me"
         ) {
           if (!memory.longTerm.relations[otherParticipant.id]) {
             // 새로운 관계 생성
@@ -1316,7 +1316,7 @@ async function cleanupTeamAgentStatesAfterFeedbackSession(
             : sessionData;
         if (session.status === "active") {
           for (const participant of session.participants) {
-            if (!participant.isUser && participant.id !== "나") {
+            if (!participant.isUser && participant.id !== "Me") {
               agentsInFeedbackSession.add(participant.id);
             }
           }

@@ -11,7 +11,7 @@ export async function GET(
   const session = await getServerSession();
 
   if (!session?.user?.email) {
-    return NextResponse.json({ error: "인증이 필요합니다." }, { status: 401 });
+    return NextResponse.json({ error: "Authentication required." }, { status: 401 });
   }
 
   try {
@@ -19,9 +19,9 @@ export async function GET(
     const messages = await getChatHistory(resolvedParams.teamId);
     return NextResponse.json({ messages });
   } catch (error) {
-    console.error("채팅 메시지 조회 오류:", error);
+    console.error("Chat message retrieval error:", error);
     return NextResponse.json(
-      { error: "채팅 메시지를 불러오는데 실패했습니다." },
+      { error: "Failed to load chat messages." },
       { status: 500 }
     );
   }
@@ -34,7 +34,7 @@ export async function POST(
   const session = await getServerSession();
 
   if (!session?.user?.email) {
-    return NextResponse.json({ error: "인증이 필요합니다." }, { status: 401 });
+    return NextResponse.json({ error: "Authentication required." }, { status: 401 });
   }
 
   try {
@@ -58,7 +58,7 @@ export async function POST(
         type: "CHAT_MESSAGE_SENT",
         payload: {
           teamId,
-          senderId: sender || "나", // 사용자면 "나", 에이전트면 agent ID
+          senderId: sender || "Me", // 사용자면 "Me", 에이전트면 agent ID
           message: newMessage,
         },
       });
@@ -81,7 +81,7 @@ export async function POST(
           type: "REQUEST_MADE",
           payload: {
             teamId,
-            requesterId: sender || "나",
+            requesterId: sender || "Me",
             targetId: messagePayload.mention || "unknown",
             requestType: messagePayload.requestType || "general",
             content: messagePayload.content || "",
@@ -110,7 +110,7 @@ export async function POST(
         id: `req-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         type: "generate_idea",
         requesterName: sender || session?.user?.email || "팀원",
-        requesterId: sender || "나",
+        requesterId: sender || "Me",
         payload: {
           message: messagePayload.content,
         },
@@ -183,7 +183,7 @@ export async function POST(
         id: `req-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         type: "evaluate_idea",
         requesterName: sender || session?.user?.email || "팀원",
-        requesterId: sender || "나",
+        requesterId: sender || "Me",
         payload: {
           message: messagePayload.content,
         },
@@ -261,22 +261,18 @@ export async function POST(
         `📨 피드백 요청 - 에이전트 ${messagePayload.mention}에게 전달`
       );
 
-      // 사용자가 보낸 피드백 요청은 이미 UI에서 피드백 세션을 생성했으므로 중복 처리 방지
-      if (sender === "나" || !sender || sender === session?.user?.email) {
-        console.log(
-          `👤 사용자가 보낸 피드백 요청은 이미 UI에서 처리됨 - AI 세션 생성 스킵`
-        );
-        return NextResponse.json({ message: newMessage });
-      }
+      // 사용자가 피드백을 요청한 경우 에이전트가 실제로 피드백을 수행해야 함
+      console.log(`👤 사용자가 피드백 요청함 - 에이전트 ${messagePayload.mention}가 피드백 액션 수행 예정`);
 
       // 새로운 에이전트 상태 시스템을 통해 요청 처리
       const requestData = {
         id: `req-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         type: "give_feedback",
         requesterName: sender || session?.user?.email || "팀원",
-        requesterId: sender || "나",
+        requesterId: sender || "Me",
         payload: {
           message: messagePayload.content,
+          feedbackTarget: messagePayload.feedbackTarget, // 피드백 대상 정보 추가
         },
         timestamp: new Date().toISOString(),
         teamId: teamId,
@@ -328,9 +324,9 @@ export async function POST(
 
     return NextResponse.json({ message: newMessage });
   } catch (error) {
-    console.error("채팅 메시지 전송 오류:", error);
+    console.error("Chat message sending error:", error);
     return NextResponse.json(
-      { error: "메시지 전송에 실패했습니다." },
+      { error: "Failed to send message." },
       { status: 500 }
     );
   }

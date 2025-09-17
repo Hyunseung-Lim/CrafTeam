@@ -43,9 +43,9 @@ function analyzeAvailableRequestTypes(teamMembers: Array<{
   agentId?: string;
 }>) {
   const requestTypeToRole = {
-    "generate_idea": "아이디어 생성하기",
-    "evaluate_idea": "아이디어 평가하기", 
-    "give_feedback": "피드백하기"
+    "generate_idea": "Idea Generation",
+    "evaluate_idea": "Idea Evaluation",
+    "give_feedback": "Feedback"
   };
   
   const availableTypes: string[] = [];
@@ -444,13 +444,13 @@ export async function giveFeedback(
     
     // From relationships
     teamContext.relationships?.forEach((rel: any) => {
-      if (rel.from !== "나") agentIds.add(rel.from);
-      if (rel.to !== "나") agentIds.add(rel.to);
+      if (rel.from !== "Me") agentIds.add(rel.from);
+      if (rel.to !== "Me") agentIds.add(rel.to);
     });
     
     // From ideas authors
     allIdeas?.forEach((idea: any) => {
-      if (idea.author !== "나") agentIds.add(idea.author);
+      if (idea.author !== "Me") agentIds.add(idea.author);
     });
     
     // Resolve all agent names
@@ -562,7 +562,7 @@ export async function planNextAction(
   try {
     // 피드백 가능한 대상이 있는지 확인
     let canGiveFeedback = false;
-    if (team && hasRole("피드백하기")) {
+    if (team && hasRole("Feedback")) {
       console.log(`🎯 ${userProfile.name} 피드백 계획 단계 확인 시작`);
       console.log(`🔍 팀 관계 정보 전체 확인:`, JSON.stringify(team.relationships, null, 2));
       console.log(`🔍 팀 멤버 정보:`, team.members.map((m: any) => ({isUser: m.isUser, agentId: m.agentId})));
@@ -582,8 +582,8 @@ export async function planNextAction(
       
       
       for (const member of otherMembers) {
-        // 사용자인 경우 "나"를 ID로 사용, 에이전트인 경우 agentId 사용
-        const targetId = member.isUser ? "나" : member.agentId!;
+        // 사용자인 경우 "Me"를 ID로 사용, 에이전트인 경우 agentId 사용
+        const targetId = member.isUser ? "Me" : member.agentId!;
         const canCreate = canCreateFeedbackSession(userProfile.id, targetId, team);
         console.log(`🎯 피드백 관계 확인: ${userProfile.name}(${userProfile.id}) → ${member.name || targetId}(${targetId}): ${canCreate ? '✅ 가능' : '❌ 불가능'}`);
         
@@ -622,7 +622,8 @@ export async function planNextAction(
 
     // 요청 가능 여부 확인
     let canMakeRequestFlag = false;
-    if (team && hasRole("요청하기")) {
+    console.log(`🔍 ${userProfile.name} 요청 권한 체크: hasRole("Request")=${hasRole("Request")}, team=${!!team}, members=${team?.members?.length || 0}`);
+    if (team && hasRole("Request")) {
       console.log(`🎯 ${userProfile.name} 요청 계획 단계 확인 시작`);
       const { canMakeRequest } = await import("@/lib/relationship-utils");
       // 요청 대상 멤버 필터링: 사용자 + 다른 에이전트들 (자신 제외)
@@ -637,8 +638,8 @@ export async function planNextAction(
       );
       
       for (const member of otherMembers) {
-        // 사용자인 경우 "나"를 ID로 사용, 에이전트인 경우 agentId 사용
-        const targetId = member.isUser ? "나" : member.agentId!;
+        // 사용자인 경우 "Me"를 ID로 사용, 에이전트인 경우 agentId 사용
+        const targetId = member.isUser ? "Me" : member.agentId!;
         const canRequest = canMakeRequest(userProfile.id, targetId, team);
         console.log(`🎯 요청 관계 확인: ${userProfile.name}(${userProfile.id}) → ${member.name || targetId}(${targetId}): ${canRequest ? '✅ 가능' : '❌ 불가능'}`);
         
@@ -728,13 +729,13 @@ ${agentContext}`,
     // 에이전트가 수행할 수 없는 행동인지 확인
     if (
       planResult.action === "generate_idea" &&
-      !hasRole("아이디어 생성하기")
+      !hasRole("Idea Generation")
     ) {
       console.log(
         `⚠️ ${userProfile.name}은 아이디어 생성 역할이 없어서 대기로 변경`
       );
       console.log(`🔍 ${userProfile.name}의 실제 역할:`, agentRoles);
-      console.log(`🔍 확인하려는 역할: "아이디어 생성하기"`);
+      console.log(`🔍 확인하려는 역할: "Idea Generation"`);
       return {
         action: "wait",
         reasoning: `아이디어 생성 역할이 없어서 대기합니다. (원래 계획: ${planResult.reasoning})`,
@@ -743,36 +744,52 @@ ${agentContext}`,
 
     if (
       planResult.action === "evaluate_idea" &&
-      !hasRole("아이디어 평가하기")
+      !hasRole("Idea Evaluation")
     ) {
       console.log(
         `⚠️ ${userProfile.name}은 아이디어 평가 역할이 없어서 대기로 변경`
       );
       console.log(`🔍 ${userProfile.name}의 실제 역할:`, agentRoles);
-      console.log(`🔍 확인하려는 역할: "아이디어 평가하기"`);
+      console.log(`🔍 확인하려는 역할: "Idea Evaluation"`);
       return {
         action: "wait",
         reasoning: `아이디어 평가 역할이 없어서 대기합니다. (원래 계획: ${planResult.reasoning})`,
       };
     }
 
-    if (planResult.action === "give_feedback" && !hasRole("피드백하기")) {
+    if (planResult.action === "give_feedback" && !hasRole("Feedback")) {
       console.log(`⚠️ ${userProfile.name}은 피드백 역할이 없어서 대기로 변경`);
       console.log(`🔍 ${userProfile.name}의 실제 역할:`, agentRoles);
-      console.log(`🔍 확인하려는 역할: "피드백하기"`);
+      console.log(`🔍 확인하려는 역할: "Feedback"`);
       return {
         action: "wait",
         reasoning: `피드백 역할이 없어서 대기합니다. (원래 계획: ${planResult.reasoning})`,
       };
     }
 
-    if (planResult.action === "make_request" && !hasRole("요청하기")) {
+    if (planResult.action === "give_feedback" && hasRole("Feedback") && !canGiveFeedback) {
+      console.log(`⚠️ ${userProfile.name}은 피드백 역할은 있지만 대상이 없어서 대기로 변경`);
+      return {
+        action: "wait",
+        reasoning: `피드백 대상이 없어서 대기합니다. (원래 계획: ${planResult.reasoning})`,
+      };
+    }
+
+    if (planResult.action === "make_request" && !hasRole("Request")) {
       console.log(`⚠️ ${userProfile.name}은 요청 역할이 없어서 대기로 변경`);
       console.log(`🔍 ${userProfile.name}의 실제 역할:`, agentRoles);
-      console.log(`🔍 확인하려는 역할: "요청하기"`);
+      console.log(`🔍 확인하려는 역할: "Request"`);
       return {
         action: "wait",
         reasoning: `요청 역할이 없어서 대기합니다. (원래 계획: ${planResult.reasoning})`,
+      };
+    }
+
+    if (planResult.action === "make_request" && hasRole("Request") && !canMakeRequestFlag) {
+      console.log(`⚠️ ${userProfile.name}은 요청 역할은 있지만 대상이 없어서 대기로 변경`);
+      return {
+        action: "wait",
+        reasoning: `요청 대상이 없어서 대기합니다. (원래 계획: ${planResult.reasoning})`,
       };
     }
 
@@ -787,16 +804,16 @@ ${agentContext}`,
 
     // 실패 시 기본 행동 (역할에 따라 랜덤하게 선택하여 다양성 확보)
     const availableActions = [];
-    if (hasRole("아이디어 생성하기")) {
+    if (hasRole("Idea Generation")) {
       availableActions.push("generate_idea");
     }
-    if (hasRole("아이디어 평가하기") && teamContext.currentIdeasCount > 0) {
+    if (hasRole("Idea Evaluation") && teamContext.currentIdeasCount > 0) {
       availableActions.push("evaluate_idea");
     }
-    if (hasRole("피드백하기")) {
+    if (hasRole("Feedback")) {
       availableActions.push("give_feedback");
     }
-    if (hasRole("요청하기")) {
+    if (hasRole("Request")) {
       availableActions.push("make_request");
     }
 
@@ -929,19 +946,19 @@ export async function preRequestAction(
     const { canMakeRequest } = await import("@/lib/relationship-utils");
     filteredTeamMembers = teamMembers.filter(member => {
       let canRequest = false;
-      const targetId = member.isUser ? "나" : member.agentId;
+      const targetId = member.isUser ? "Me" : member.agentId;
       console.log(`🔍 관계 검증: ${userProfile.id} → ${targetId}`);
       
       if (member.isUser) {
-        canRequest = canMakeRequest(userProfile.id, "나", team);
+        canRequest = canMakeRequest(userProfile.id, "Me", team);
       } else {
         canRequest = member.agentId ? canMakeRequest(userProfile.id, member.agentId, team) : false;
       }
-      console.log(`🎯 ${userProfile.name} → ${member.name || member.agentId || '나'}: ${canRequest ? '✅ 가능' : '❌ 불가능'}`);
+      console.log(`🎯 ${userProfile.name} → ${member.name || member.agentId || 'Me'}: ${canRequest ? '✅ 가능' : '❌ 불가능'}`);
       return canRequest;
     });
     
-    console.log(`📋 ${userProfile.name} 요청 가능한 팀원: ${filteredTeamMembers.length}명`, filteredTeamMembers.map(m => m.name || m.agentId || '나'));
+    console.log(`📋 ${userProfile.name} 요청 가능한 팀원: ${filteredTeamMembers.length}명`, filteredTeamMembers.map(m => m.name || m.agentId || 'Me'));
     
     // 요청 가능한 팀원이 없으면 에러 반환
     if (filteredTeamMembers.length === 0) {
@@ -949,7 +966,7 @@ export async function preRequestAction(
       console.log(`📊 원본 팀원 수: ${teamMembers.length}, 필터링 후: ${filteredTeamMembers.length}`);
       console.log(`🔍 관계 확인 결과 상세:`);
       teamMembers.forEach(member => {
-        const targetId = member.isUser ? "나" : member.agentId;
+        const targetId = member.isUser ? "Me" : member.agentId;
         const relationshipType = team.relationships.find((rel: any) => 
           (rel.from === userProfile.id && rel.to === targetId) ||
           (rel.from === targetId && rel.to === userProfile.id)
@@ -1083,9 +1100,9 @@ export async function makeRequestAction(
 
   // 역할 검증: 선택된 요청 타입이 대상 팀원이 수행할 수 있는지 확인
   const requestTypeToRole = {
-    "generate_idea": "아이디어 생성하기",
-    "evaluate_idea": "아이디어 평가하기", 
-    "give_feedback": "피드백하기"
+    "generate_idea": "Idea Generation",
+    "evaluate_idea": "Idea Evaluation",
+    "give_feedback": "Feedback"
   };
   
   const requiredRole = requestTypeToRole[requestAnalysis.requestType as keyof typeof requestTypeToRole];
@@ -1246,13 +1263,13 @@ export async function generateFeedbackSessionResponse(
       
       // From relationships
       enhancedTeamContext.relationships?.forEach((rel: any) => {
-        if (rel.from !== "나") agentIds.add(rel.from);
-        if (rel.to !== "나") agentIds.add(rel.to);
+        if (rel.from !== "Me") agentIds.add(rel.from);
+        if (rel.to !== "Me") agentIds.add(rel.to);
       });
       
       // From ideas authors
       sessionContext.allIdeas?.forEach((idea: any) => {
-        if (idea.author !== "나") agentIds.add(idea.author);
+        if (idea.author !== "Me") agentIds.add(idea.author);
       });
       
       // Resolve all agent names

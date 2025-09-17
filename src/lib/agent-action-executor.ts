@@ -48,7 +48,7 @@ export async function executeAgentAction(
     const agentProfile = {
       ...baseAgentProfile,
       roles: teamMember?.roles || [],
-      isLeader: teamMember?.isLeader || false
+      // isLeader: teamMember?.isLeader || false // removed unused property
     };
 
 
@@ -101,7 +101,7 @@ async function executeGenerateIdeaAction(
   
   // Helper function to get author name
   const getAuthorName = async (authorId: string) => {
-    if (authorId === "나") return "나";
+    if (authorId === "Me") return "Me";
     
     const member = team?.members.find((m: any) => m.agentId === authorId);
     if (member && !member.isUser) {
@@ -169,16 +169,16 @@ async function executeGenerateIdeaAction(
     author: agentId,
     timestamp: new Date().toISOString(),
     content: {
-      object: generatedContent.object || "생성된 아이디어",
-      function: generatedContent.function || "기능 설명",
+      object: generatedContent.object || "Generated Idea",
+      function: generatedContent.function || "Function Description",
       behavior:
         typeof generatedContent.behavior === "object"
           ? JSON.stringify(generatedContent.behavior)
-          : generatedContent.behavior || "동작 설명",
+          : generatedContent.behavior || "Behavior Description",
       structure:
         typeof generatedContent.structure === "object"
           ? JSON.stringify(generatedContent.structure)
-          : generatedContent.structure || "구조 설명",
+          : generatedContent.structure || "Structure Description",
     },
     evaluations: [],
   });
@@ -187,9 +187,9 @@ async function executeGenerateIdeaAction(
     sender: agentId,
     type: "system",
     payload: {
-      content: preAnalysis.decision === "Update" 
-        ? `기존 아이디어를 업데이트하여 새로운 아이디어를 생성했습니다.`
-        : `새로운 아이디어를 생성했습니다.`,
+      content: preAnalysis.decision === "Update"
+        ? `Generated a new idea by updating an existing one.`
+        : `Generated a new idea.`,
     },
   });
 
@@ -198,7 +198,7 @@ async function executeGenerateIdeaAction(
     await triggerMemoryUpdate(
       agentId,
       "idea_evaluation", // 아이디어 생성 후 회고
-      `I generated a new idea: "${generatedContent.object}" with the strategy: ${preAnalysis.ideationStrategy}`,
+      `Generated a new idea: "${generatedContent.object}" (strategy: ${preAnalysis.ideationStrategy})`,
       undefined,
       teamId
     );
@@ -253,7 +253,7 @@ async function executeEvaluateIdeaAction(
 ) {
   // Helper function to get author name
   const getAuthorName = (authorId: string) => {
-    if (authorId === "나") return "나";
+    if (authorId === "Me") return "Me";
     
     const member = team?.members.find((m: any) => m.agentId === authorId);
     if (member && !member.isUser) {
@@ -418,7 +418,7 @@ async function executeEvaluateIdeaAction(
           sender: agentId,
           type: "system",
           payload: {
-            content: `아이디어를 평가했습니다.`,
+            content: `Evaluated an idea.`,
           },
         });
       }
@@ -429,7 +429,7 @@ async function executeEvaluateIdeaAction(
           agentId,
           "idea_evaluation",
           `I evaluated "${selectedIdea.content.object}" by ${selectedIdea.authorName} using strategy: ${preAnalysis.evaluationStrategy}. Scores: novelty=${evaluation.scores.novelty}, completeness=${evaluation.scores.completeness}, quality=${evaluation.scores.quality}`,
-          selectedIdea.author !== "나" ? selectedIdea.author : undefined,
+          selectedIdea.author !== "Me" ? selectedIdea.author : undefined,
           teamId
         );
         console.log(
@@ -624,7 +624,7 @@ async function createFeedbackSession(
     );
 
     // 첫 메시지 생성 트리거
-    const delay = targetAgent.name === "나" ? 1000 : 3000;
+    const delay = targetAgent.name === "Me" ? 1000 : 3000;
     setTimeout(async () => {
       await triggerFeedbackMessage(
         teamId,
@@ -690,7 +690,7 @@ async function updateAgentStatesForFeedbackSession(
   }
 
   // 대상 에이전트 상태 변경 (인간이 아닌 경우만)
-  if (targetAgent.name !== "나") {
+  if (targetAgent.name !== "Me") {
     try {
       const targetResponse = await fetch(
         `${baseUrl}/api/teams/${teamId}/agent-states`,
@@ -944,7 +944,7 @@ async function executeMakeRequestAction(
     const allTeamMembers = await Promise.all(team.members.map(async (member: any) => {
       if (member.isUser) {
         return {
-          name: member.userProfile?.name || "나",
+          name: member.userProfile?.name || "Me",
           roles: member.roles.map((role: any) => role.toString()),
           isUser: true,
           agentId: undefined,
@@ -999,7 +999,7 @@ async function executeMakeRequestAction(
     
     // Helper function to get author name
     const getAuthorName = async (authorId: string) => {
-      if (authorId === "나") return "나";
+      if (authorId === "Me") return "Me";
       
       const member = team?.members.find((m: any) => m.agentId === authorId);
       if (member && !member.isUser) {
@@ -1109,7 +1109,7 @@ async function executeMakeRequestAction(
     try {
       // 대상이 사용자인지 에이전트인지 확인하여 적절한 ID 설정
       const targetMember = teamMembers.find(m => m.name === requestResult.analysis.targetMember);
-      const relatedAgentId = targetMember?.isUser ? "나" : targetMember?.agentId;
+      const relatedAgentId = targetMember?.isUser ? "Me" : targetMember?.agentId;
       
       await triggerMemoryUpdate(
         agentId,
@@ -1207,8 +1207,8 @@ async function generateInitialFeedbackMessage(
     
     let targetMemberName: string;
     if (targetMember.isUser) {
-      // 사용자의 실제 이름 사용, 없으면 "나"로 폴백
-      targetMemberName = targetMember.userProfile?.name || "나";
+      // 사용자의 실제 이름 사용, 없으면 "Me"로 폴백
+      targetMemberName = targetMember.userProfile?.name || "Me";
     } else {
       const targetAgent = await getAgentById(targetMember.agentId);
       targetMemberName = targetAgent?.name || targetMember.name;
@@ -1216,7 +1216,7 @@ async function generateInitialFeedbackMessage(
     
     // 해당 멤버가 낸 아이디어들 찾기
     const targetMemberIdeas = targetMember.isUser 
-      ? ideas.filter(idea => idea.author === "나")
+      ? ideas.filter(idea => idea.author === "Me")
       : ideas.filter(idea => idea.author === targetMember.agentId);
     
     // allIdeas 변수 정의 (전체 아이디어 리스트)

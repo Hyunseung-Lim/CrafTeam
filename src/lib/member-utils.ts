@@ -1,21 +1,28 @@
 import { Team, TeamMember, AIAgent, TeamMemberSlot } from "@/lib/types";
 
 /**
- * 멤버 식별 및 관계 관리를 위한 유틸리티 함수들
+ * Utility functions for member identification and relationship management
  */
 
 /**
  * 팀에서 멤버를 찾는 통합 함수
  */
 export function findMemberById(team: Team, id: string): TeamMember | null {
-  // 1. 직접 ID 매치 (사용자의 경우 "나")
-  if (id === "나") {
+  // 1. Direct ID match ("Me" or "나" for user)
+  if (id === "Me" || id === "나") {
     return team.members.find(m => m.isUser) || null;
   }
 
   // 2. agentId 매치 (null 체크 포함)
   const byAgentId = team.members.find(m => !m.isUser && m.agentId && m.agentId === id);
   if (byAgentId) return byAgentId;
+
+  // 2.1. Handle bot suffix (e.g., "AgentName봇" -> "AgentName")
+  if (id.endsWith("봇")) {
+    const baseId = id.slice(0, -1);
+    const byBotSuffix = team.members.find(m => !m.isUser && m.agentId && m.agentId === baseId);
+    if (byBotSuffix) return byBotSuffix;
+  }
 
   // 3. 사용자 이름 매치 (userProfile.name이 있는 경우만)
   const byUserName = team.members.find(m => m.isUser && m.userProfile?.name && m.userProfile.name === id);
@@ -38,7 +45,7 @@ export function findMemberById(team: Team, id: string): TeamMember | null {
  */
 export function getMemberActualId(member: TeamMember): string {
   if (member.isUser) {
-    return "나";
+    return "Me";
   }
   
   // agentId가 없는 경우 슬롯 기반 임시 ID 생성
@@ -56,7 +63,7 @@ export function getMemberActualId(member: TeamMember): string {
  */
 export function getMemberDisplayName(member: TeamMember | TeamMemberSlot, agents?: AIAgent[]): string {
   if (member.isUser) {
-    return (member as TeamMember).userProfile?.name || "나";
+    return (member as TeamMember).userProfile?.name || "Me";
   }
   
   // AI 멤버의 경우 에이전트 이름 검색
@@ -69,7 +76,7 @@ export function getMemberDisplayName(member: TeamMember | TeamMemberSlot, agents
   
   // 폴백: 기본 이름 반환
   const fallbackId = 'id' in member ? member.id : 'AI';
-  return `팀원 ${fallbackId}`;
+  return `Member ${fallbackId}`;
 }
 
 /**
@@ -92,8 +99,8 @@ export function mapActualIdToDisplayName(team: Team, actualId: string, agents?: 
  * 에이전트 ID를 실제 에이전트 이름으로 변환
  */
 export async function resolveAgentIdToName(agentId: string): Promise<string> {
-  if (agentId === "나") {
-    return "나";
+  if (agentId === "Me") {
+    return "Me";
   }
   
   try {
@@ -132,10 +139,11 @@ export function createMemberIdMapping(teamMembers: any[]): { [slotId: string]: s
   
   teamMembers.forEach((member) => {
     if (member.isUser) {
-      mapping["나"] = "나";
-      // 사용자 슬롯 ID는 "나"로만 매핑 (중복 매핑 방지)
-      if (member.id !== "나") {
-        mapping[member.id] = "나";
+      mapping["Me"] = "Me";
+      mapping["나"] = "Me"; // Support both Korean and English
+      // User slot ID maps only to "Me" (prevent duplicate mapping)
+      if (member.id !== "나" && member.id !== "Me") {
+        mapping[member.id] = "Me";
       }
     } else {
       // agentId가 없는 경우 처리 개선

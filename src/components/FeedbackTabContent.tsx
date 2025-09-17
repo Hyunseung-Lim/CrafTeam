@@ -261,12 +261,12 @@ export default function FeedbackTabContent({
             <MessageCircle className="h-5 w-5 text-orange-600" />
             <div>
               <h3 className="font-semibold text-orange-800">
-                {tab.participantName}와의 피드백 세션
+                Feedback Session with {tab.participantName}
               </h3>
               <p className="text-xs text-orange-600">
                 {tab.type === "user_to_ai"
-                  ? `${tab.participantName}에게 피드백을 요청했습니다.`
-                  : `${tab.participantName}가 피드백을 요청했습니다.`}
+                  ? `Requested feedback from ${tab.participantName}.`
+                  : `${tab.participantName} requested feedback.`}
               </p>
             </div>
           </div>

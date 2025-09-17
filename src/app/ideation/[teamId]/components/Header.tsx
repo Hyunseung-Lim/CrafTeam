@@ -25,14 +25,14 @@ export default function Header({
           <Link href="/">
             <Button variant="ghost" size="sm">
               <ArrowLeft className="h-4 w-4 mr-2" />
-              홈으로
+              Home
             </Button>
           </Link>
           <div>
             <h1 className="text-xl font-bold text-gray-900">{team.teamName}</h1>
             <div className="flex flex-row gap-2 text-sm text-gray-600 items-center">
               <p className="text-sm">
-                {topic ? `주제: ${topic}` : "아이디에이션 세션"}
+                {topic ? `Topic: ${topic}` : "Ideation Session"}
               </p>
             </div>
           </div>
@@ -46,7 +46,7 @@ export default function Header({
               }`}
             />
             <span className="text-xs text-gray-500">
-              {sseConnected ? "실시간 연결됨" : "연결 끊어짐"}
+              {sseConnected ? "Connected" : "Disconnected"}
             </span>
           </div>
 
@@ -55,7 +55,7 @@ export default function Header({
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 rounded-full bg-orange-500 animate-pulse" />
               <span className="text-xs text-orange-600 font-medium">
-                피드백 세션 진행 중 ({feedbackTabsCount}개 탭)
+                Feedback session in progress ({feedbackTabsCount} tabs)
               </span>
             </div>
           )}
@@ -68,7 +68,7 @@ export default function Header({
               className="text-xs"
             >
               <FileText className="h-3 w-3 mr-1" />
-              피드백 리뷰
+              Feedback Review
             </Button>
           </Link>
 
@@ -79,12 +79,9 @@ export default function Header({
             onClick={onResetAgentStates}
             className="text-xs"
           >
-            🔄 상태 초기화
+            🔄 Reset State
           </Button>
 
-          <div className="text-sm text-gray-600">
-            {team.members.length}명의 팀원
-          </div>
         </div>
       </div>
     </header>

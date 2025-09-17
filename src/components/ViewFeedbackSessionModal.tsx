@@ -115,11 +115,11 @@ export default function ViewFeedbackSessionModal({
       (end.getTime() - start.getTime()) / (1000 * 60)
     );
 
-    if (diffMinutes < 1) return "1분 미만";
-    if (diffMinutes < 60) return `${diffMinutes}분`;
+    if (diffMinutes < 1) return "Less than 1 minute";
+    if (diffMinutes < 60) return `${diffMinutes} minutes`;
     const hours = Math.floor(diffMinutes / 60);
     const minutes = diffMinutes % 60;
-    return `${hours}시간 ${minutes}분`;
+    return `${hours} hours ${minutes} minutes`;
   };
 
   if (!isOpen) return null;
@@ -130,7 +130,7 @@ export default function ViewFeedbackSessionModal({
         <div className="bg-white rounded-2xl max-w-lg w-full p-6">
           <div className="flex items-center justify-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-            <span className="ml-3 text-gray-600">세션 데이터 로딩 중...</span>
+            <span className="ml-3 text-gray-600">Loading session data...</span>
           </div>
         </div>
       </div>
@@ -149,12 +149,12 @@ export default function ViewFeedbackSessionModal({
             <div className="flex items-center gap-2">
               <Eye className="h-5 w-5 text-purple-600" />
               <h2 className="text-lg font-bold text-gray-900">
-                피드백 세션 보기
+                View Feedback Session
               </h2>
             </div>
             {isAIOnlySession && (
               <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full font-medium">
-                AI 자율 피드백
+                AI Autonomous Feedback
               </span>
             )}
             <div
@@ -164,7 +164,7 @@ export default function ViewFeedbackSessionModal({
                   : "bg-gray-100 text-gray-700"
               }`}
             >
-              {session.status === "active" ? "진행중" : "완료됨"}
+              {session.status === "active" ? "In Progress" : "Completed"}
             </div>
           </div>
           <div className="flex items-center gap-3">
@@ -185,7 +185,7 @@ export default function ViewFeedbackSessionModal({
         <div className="p-3 bg-gray-50 border-b border-gray-200">
           <div className="flex items-center gap-2">
             <Users className="h-4 w-4 text-gray-500" />
-            <span className="text-sm text-gray-600">참가자:</span>
+            <span className="text-sm text-gray-600">Participants:</span>
             {session.participants.map((participant, index) => (
               <span
                 key={participant.id}

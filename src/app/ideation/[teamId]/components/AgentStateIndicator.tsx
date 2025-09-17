@@ -18,7 +18,7 @@ export default function AgentStateIndicator({
     return (
       <div className="flex items-center gap-2 px-2 py-1 rounded-full bg-gray-100 text-gray-500 text-xs">
         <div className="w-2 h-2 bg-gray-400 rounded-full animate-pulse"></div>
-        <span>로딩 중...</span>
+        <span>Loading...</span>
       </div>
     );
   }
@@ -28,50 +28,50 @@ export default function AgentStateIndicator({
       case "idle":
         return {
           icon: <Clock className="h-3 w-3" />,
-          text: timer && timer > 0 ? `대기 (${timer}초)` : "대기중",
+          text: timer && timer > 0 ? `Wait (${timer}s)` : "Waiting",
           color: "bg-gray-100 text-gray-600",
           tooltip: state.idleTimer
-            ? `${Math.floor((timer || 0) / 60)}분 ${
+            ? `Next action planned in ${Math.floor((timer || 0) / 60)}m ${
                 (timer || 0) % 60
-              }초 후 다음 행동 계획`
-            : "대기 중",
+              }s`
+            : "Waiting",
         };
       case "plan":
         return {
           icon: <Brain className="h-3 w-3" />,
-          text: "계획중",
+          text: "Planning",
           color: "bg-yellow-100 text-yellow-700",
           tooltip:
-            state.currentTask?.description || "다음 행동을 계획하고 있습니다",
+            state.currentTask?.description || "Planning next action",
         };
       case "feedback_session":
         return {
           icon: <MessageCircle className="h-3 w-3" />,
-          text: "피드백 세션 중",
+          text: "In feedback session",
           color: "bg-orange-100 text-orange-700",
           tooltip: state.currentTask?.sessionInfo
-            ? `피드백 세션: ${state.currentTask.sessionInfo.participants.join(
+            ? `Feedback session: ${state.currentTask.sessionInfo.participants.join(
                 " & "
               )}`
-            : state.currentTask?.description || "피드백 세션 진행 중",
+            : state.currentTask?.description || "In feedback session",
         };
       case "feedback_waiting":
         return {
           icon: <Pause className="h-3 w-3" />,
-          text: "피드백 대기 중",
+          text: "Waiting for feedback",
           color: "bg-amber-100 text-amber-700",
           tooltip: state.currentTask?.requestInfo
-            ? `${state.currentTask.requestInfo.requesterName}의 피드백을 기다리는 중`
-            : state.currentTask?.description || "피드백을 기다리는 중",
+            ? `Waiting for feedback from ${state.currentTask.requestInfo.requesterName}`
+            : state.currentTask?.description || "Waiting for feedback",
         };
       case "reflecting":
         return {
           icon: <Brain className="h-3 w-3" />,
-          text: "회고중",
+          text: "Reflecting",
           color: "bg-blue-100 text-blue-700",
           tooltip:
             state.currentTask?.description ||
-            "경험을 회고하고 메모리를 업데이트하는 중입니다",
+            "Reflecting on experience and updating memory",
         };
       case "action":
         // 작업 타입에 따른 구체적인 표시
@@ -83,41 +83,41 @@ export default function AgentStateIndicator({
           let baseText = "";
           switch (taskType) {
             case "generate_idea":
-              baseText = "아이디어 생성중";
+              baseText = "Generating idea";
               break;
             case "evaluate_idea":
-              baseText = "아이디어 평가중";
+              baseText = "Evaluating idea";
               break;
             case "planning":
-              baseText = "계획중";
+              baseText = "Planning";
               break;
             case "thinking":
-              baseText = "사고중";
+              baseText = "Thinking";
               break;
             case "give_feedback":
-              baseText = "피드백 세션 준비중";
+              baseText = "Preparing feedback session";
               break;
             case "make_request":
-              baseText = "요청 생성중";
+              baseText = "Creating request";
               break;
             case "reflecting":
-              baseText = "회고중";
+              baseText = "Reflecting";
               break;
             case "feedback_session":
-              baseText = "피드백 세션 중";
+              baseText = "In feedback session";
               break;
             case "feedback_waiting":
-              baseText = "피드백 대기 중";
+              baseText = "Waiting for feedback";
               break;
             default:
-              baseText = "작업중";
+              baseText = "Working";
           }
 
           // 트리거에 따라 추가 정보 표시
           if (trigger === "user_request" && requester) {
-            return `${baseText}\n(${requester} 요청)`;
+            return `${baseText}\n(Requested by ${requester})`;
           } else if (trigger === "ai_request" && requester) {
-            return `${baseText}\n(${requester} 요청)`;
+            return `${baseText}\n(Requested by ${requester})`;
           }
 
           return baseText;
@@ -141,20 +141,20 @@ export default function AgentStateIndicator({
           const message = state.currentTask?.requestInfo?.requestMessage;
 
           let tooltip =
-            state.currentTask?.description || "작업을 수행하고 있습니다";
+            state.currentTask?.description || "Performing task";
 
           if (trigger === "user_request" && requester) {
-            tooltip += `\n요청자: ${requester}`;
+            tooltip += `\nRequested by: ${requester}`;
             if (message) {
-              tooltip += `\n요청 내용: ${message}`;
+              tooltip += `\nRequest: ${message}`;
             }
           } else if (trigger === "ai_request" && requester) {
-            tooltip += `\n요청자: ${requester}`;
+            tooltip += `\nRequested by: ${requester}`;
             if (message) {
-              tooltip += `\n요청 내용: ${message}`;
+              tooltip += `\nRequest: ${message}`;
             }
           } else if (trigger === "autonomous") {
-            tooltip += "\n(자율적 계획에 의한 작업)";
+            tooltip += "\n(Autonomous action)";
           }
 
           return tooltip;
@@ -167,7 +167,7 @@ export default function AgentStateIndicator({
           tooltip: getActionTooltip(),
         };
       default:
-        console.warn(`알 수 없는 에이전트 상태 감지:`, {
+        console.warn(`Unknown agent state detected:`, {
           agentName,
           currentState: state.currentState,
           isProcessing: state.isProcessing,
@@ -176,9 +176,9 @@ export default function AgentStateIndicator({
         });
         return {
           icon: <Clock className="h-3 w-3" />,
-          text: "알 수 없음",
+          text: "Unknown",
           color: "bg-gray-100 text-gray-600",
-          tooltip: `상태를 확인할 수 없습니다 (${state.currentState})`,
+          tooltip: `Cannot determine state (${state.currentState})`,
         };
     }
   };
@@ -203,7 +203,7 @@ export default function AgentStateIndicator({
           timer &&
           timer > 0 && (
             <div className="text-gray-300 mt-1">
-              예상 완료: {Math.ceil(timer)}초 후
+              Expected completion: {Math.ceil(timer)}s
             </div>
           )}
         {state.currentState === "action" &&
@@ -211,8 +211,8 @@ export default function AgentStateIndicator({
           state.currentTask.trigger !== "autonomous" && (
             <div className="text-gray-300 mt-1">
               {state.currentTask.trigger === "user_request"
-                ? "👤 사용자 요청"
-                : "🤖 AI 요청"}
+                ? "👤 User request"
+                : "🤖 AI request"}
             </div>
           )}
         {/* 툴팁 화살표 */}

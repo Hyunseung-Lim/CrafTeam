@@ -127,10 +127,10 @@ export async function POST(
 
       if (targetInSession) {
         const targetAgentData =
-          targetAgentId !== "나" ? await getAgentById(targetAgentId) : null;
+          targetAgentId !== "Me" ? await getAgentById(targetAgentId) : null;
         const targetName =
-          targetAgentId === "나"
-            ? "나"
+          targetAgentId === "Me"
+            ? "Me"
             : targetAgentData?.name || targetAgentId;
 
         return NextResponse.json(
@@ -147,12 +147,12 @@ export async function POST(
 
       // 사용자 실제 이름 가져오기 (ChatArea 패턴 사용)
       const userMember = team.members.find(m => m.isUser);
-      const userName = userMember?.userProfile?.name || "나";
+      const userName = userMember?.userProfile?.name || "Me";
 
       // 에이전트 해결 공통 함수
       const resolveAgent = async (agentId: string) => {
-        if (agentId === "나") {
-          return { id: "나", data: null };
+        if (agentId === "Me") {
+          return { id: "Me", data: null };
         }
 
         // 먼저 ID로 시도
@@ -199,23 +199,23 @@ export async function POST(
       const participants = [
         {
           id: initiatorId,
-          name: initiatorId === "나" ? userName : "AI Agent",
-          isUser: initiatorId === "나",
+          name: initiatorId === "Me" ? userName : "AI Agent",
+          isUser: initiatorId === "Me",
           joinedAt: new Date().toISOString(),
         },
         {
           id: resolvedTargetAgentId,
           name:
-            resolvedTargetAgentId === "나"
+            resolvedTargetAgentId === "Me"
               ? userName
               : targetAgentData?.name || "Target Agent",
-          isUser: resolvedTargetAgentId === "나",
+          isUser: resolvedTargetAgentId === "Me",
           joinedAt: new Date().toISOString(),
         },
       ];
 
       // initiator 에이전트 이름 설정
-      if (initiatorId !== "나") {
+      if (initiatorId !== "Me") {
         const initiatorAgent = await resolveAgent(initiatorId);
         if (initiatorAgent?.data) {
           participants[0].name = initiatorAgent.data.name;
@@ -251,7 +251,7 @@ export async function POST(
       const initialMessage = {
         id: `msg_${Date.now()}_init`,
         sender: "system",
-        content: "피드백 세션이 시작되었습니다.",
+        content: "Feedback session has started.",
         timestamp: new Date().toISOString(),
         type: "system" as const,
       };
@@ -272,7 +272,7 @@ export async function POST(
 
       // 공통 상태 변경 함수
       const updateParticipantState = async (participantId: string, participantName: string, trigger: string) => {
-        if (participantId !== "나") {
+        if (participantId !== "Me") {
           // AI 에이전트 상태 변경
           try {
             const response = await fetch(
@@ -341,14 +341,14 @@ export async function POST(
       // 병렬 상태 업데이트
       await Promise.all([
         updateParticipantState(initiatorId, participants[1].name, "user_request"),
-        updateParticipantState(resolvedTargetAgentId, participants[0].name, initiatorId === "나" ? "user_request" : "ai_initiated")
+        updateParticipantState(resolvedTargetAgentId, participants[0].name, initiatorId === "Me" ? "user_request" : "ai_initiated")
       ]);
 
       // 사용자가 첫 메시지를 남기는 경우 AI 응답 트리거
-      if (initiatorId === "나" && message) {
+      if (initiatorId === "Me" && message) {
         const userMessage = {
           id: `msg_${Date.now()}_user`,
-          sender: "나",
+          sender: "Me",
           content: message,
           timestamp: new Date().toISOString(),
           type: "message" as const,
@@ -523,7 +523,7 @@ export async function POST(
 
           // 각 참가자의 메모리에 요약 저장 (AI 에이전트만)
           for (const participant of session.participants) {
-            if (!participant.isUser && participant.id !== "나") {
+            if (!participant.isUser && participant.id !== "Me") {
               try {
                 await processMemoryUpdate({
                   type: "FEEDBACK_SESSION_COMPLETED",
@@ -692,9 +692,9 @@ export async function POST(
 
       // 참가자별 상태 초기화 실행
       const resetPromises = session.participants.map(participant => {
-        if (!participant.isUser && participant.id !== "나") {
+        if (!participant.isUser && participant.id !== "Me") {
           return resetAgentStateWithRetry(participant);
-        } else if (participant.id === "나") {
+        } else if (participant.id === "Me") {
           return resetUserState();
         }
         return Promise.resolve(true);
@@ -732,7 +732,7 @@ export async function POST(
 
       // AI 에이전트들에 대해서만 병렬로 검증 실행
       const verificationPromises = session.participants
-        .filter(participant => !participant.isUser && participant.id !== "나")
+        .filter(participant => !participant.isUser && participant.id !== "Me")
         .map(participant => verifyAndFixAgentState(participant));
       
       await Promise.all(verificationPromises);
@@ -774,7 +774,7 @@ export async function POST(
       // 새 메시지 추가
       const newMessage = {
         id: `msg_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`,
-        sender: senderId || "나",
+        sender: senderId || "Me",
         content: message,
         timestamp: new Date().toISOString(),
         type: "message" as const,
@@ -803,7 +803,7 @@ export async function POST(
       console.log(`✅ [DEBUG] 메시지 저장 완료: ${sessionId}`);
 
       // 🔄 메시지 전송 후 발신자(사용자)의 피드백 세션 상태 유지 확인
-      if (senderId === "나") {
+      if (senderId === "Me") {
         try {
           const userStateKey = `team:${teamId}:user_state`;
           const existingUserState = await redis.get(userStateKey);
@@ -858,9 +858,9 @@ export async function POST(
       }
 
       // AI 응답 트리거 (사용자가 메시지를 보낸 경우)
-      if (senderId === "나") {
+      if (senderId === "Me") {
         const targetParticipant = session.participants.find(
-          (p) => p.id !== "나" && !p.isUser
+          (p) => p.id !== "Me" && !p.isUser
         );
 
         if (targetParticipant) {
@@ -966,7 +966,7 @@ export async function GET(
           if (
             session.teamId === teamId &&
             session.status === "active" &&
-            session.participants.some((p: any) => p.id === "나")
+            session.participants.some((p: any) => p.id === "Me")
           ) {
             userSessions.push(session);
           }

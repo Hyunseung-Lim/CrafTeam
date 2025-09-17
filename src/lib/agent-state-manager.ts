@@ -163,7 +163,7 @@ async function executePlanningLogic(
     ? {
         ...agentProfile,
         roles: teamMember?.roles || [],
-        isLeader: teamMember?.isLeader || false,
+        // isLeader: teamMember?.isLeader || false, // removed unused property
       }
     : null;
 
@@ -192,8 +192,8 @@ async function executePlanningLogic(
     existingIdeas: ideas.map((idea, index) => ({
       ideaNumber: index + 1,
       authorName:
-        idea.author === "나"
-          ? "나"
+        idea.author === "Me"
+          ? "Me"
           : (() => {
               const member = team?.members.find(
                 (tm) => tm.agentId === idea.author
@@ -209,7 +209,7 @@ async function executePlanningLogic(
       object: idea.content.object,
       function: idea.content.function,
     })),
-  });
+  }, undefined, team); // team 객체를 4번째 파라미터로 전달
 
   // planning 완료 후 상태 업데이트
   const currentState = await getAgentState(teamId, agentId);

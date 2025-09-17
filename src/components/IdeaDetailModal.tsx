@@ -147,7 +147,7 @@ export default function IdeaDetailModal({
     if (!data || data === "" || data === "[]" || data === "{}") {
       return (
         <div className="text-gray-400 italic text-sm">
-          정보가 입력되지 않았습니다.
+          No information entered.
         </div>
       );
     }
@@ -172,7 +172,7 @@ export default function IdeaDetailModal({
           if (parsed.length === 0) {
             return (
               <div className="text-gray-400 italic text-sm">
-                정보가 입력되지 않았습니다.
+                No information entered.
               </div>
             );
           }
@@ -180,7 +180,7 @@ export default function IdeaDetailModal({
             <div className="space-y-4">
               {parsed.map((item, index) => (
                 <div key={index} className="border-l-4 border-blue-200 pl-4">
-                  <div className="font-medium text-gray-800 mb-1">{item.key || `요소 ${index + 1}`}</div>
+                  <div className="font-medium text-gray-800 mb-1">{item.key || `Element ${index + 1}`}</div>
                   <div className="text-gray-600 text-sm whitespace-pre-wrap">{renderValue(item.value || item)}</div>
                 </div>
               ))}
@@ -205,7 +205,7 @@ export default function IdeaDetailModal({
         return (
           <div className="space-y-2">
             <div className="text-yellow-600 text-sm font-medium">
-              ⚠️ JSON 파싱 실패 - Raw 데이터:
+              ⚠️ JSON Parsing Failed - Raw Data:
             </div>
             <pre className="bg-gray-100 p-3 rounded text-sm text-gray-700 whitespace-pre-wrap overflow-x-auto">
               {data}
@@ -219,7 +219,7 @@ export default function IdeaDetailModal({
         if (data.length === 0) {
           return (
             <div className="text-gray-400 italic text-sm">
-              정보가 입력되지 않았습니다.
+              No information entered.
             </div>
           );
         }
@@ -227,7 +227,7 @@ export default function IdeaDetailModal({
           <div className="space-y-4">
             {data.map((item, index) => (
               <div key={index} className="border-l-4 border-blue-200 pl-4">
-                <div className="font-medium text-gray-800 mb-1">{item.key || `요소 ${index + 1}`}</div>
+                <div className="font-medium text-gray-800 mb-1">{item.key || `Element ${index + 1}`}</div>
                 <div className="text-gray-600 text-sm whitespace-pre-wrap">{renderValue(item.value || item)}</div>
               </div>
             ))}
@@ -258,7 +258,7 @@ export default function IdeaDetailModal({
     const member = team?.members.find((m) => m.agentId === authorId);
     if (member && !member.isUser) {
       const agent = agents.find((a) => a.id === authorId);
-      return agent?.name || `에이전트 ${authorId}`;
+      return agent?.name || `Agent ${authorId}`;
     }
 
     return authorId;
@@ -270,14 +270,14 @@ export default function IdeaDetailModal({
     const member = team?.members.find((m) => m.agentId === evaluatorId);
     if (member && !member.isUser) {
       const agent = agents.find((a) => a.id === evaluatorId);
-      return agent?.name || `에이전트 ${evaluatorId}`;
+      return agent?.name || `Agent ${evaluatorId}`;
     }
 
     return evaluatorId;
   };
 
   // 아이디어 번호 매기기를 위한 생성순 정렬
-  const ideasSortedByCreation = [...ideas].sort((a, b) => a.id - b.id);
+  const ideasSortedByCreation = [...ideas].sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
 
   const handlePrevious = () => {
     const newIndex = currentIndex > 0 ? currentIndex - 1 : ideas.length - 1;
@@ -338,15 +338,15 @@ export default function IdeaDetailModal({
         }
         
         // API에서 받은 메시지 표시
-        alert(result.message || "아이디어 업데이트 성공");
-        console.log("아이디어 업데이트 성공");
+        alert(result.message || "Idea update successful");
+        console.log("Idea update successful");
       } else {
-        console.error("아이디어 업데이트 실패:", response.status);
-        alert("아이디어 업데이트에 실패했습니다.");
+        console.error("Idea update failed:", response.status);
+        alert("Failed to update idea.");
       }
     } catch (error) {
-      console.error("아이디어 업데이트 오류:", error);
-      alert("아이디어 업데이트 중 오류가 발생했습니다.");
+      console.error("Idea update error:", error);
+      alert("An error occurred while updating the idea.");
     }
   };
 
@@ -374,7 +374,7 @@ export default function IdeaDetailModal({
       !evaluationFormData.quality ||
       !evaluationFormData.comment.trim()
     ) {
-      alert("모든 평가 항목을 완료해주세요.");
+      alert("Please complete all evaluation items.");
       return;
     }
 
@@ -392,13 +392,13 @@ export default function IdeaDetailModal({
         setShowEvaluationForm(false);
 
         // 성공 메시지 표시
-        alert("평가가 성공적으로 제출되었습니다!");
+        alert("Evaluation submitted successfully!");
       } else {
-        throw new Error("평가 제출에 실패했습니다.");
+        throw new Error("Failed to submit evaluation.");
       }
     } catch (error) {
       console.error("평가 제출 실패:", error);
-      alert("평가 제출에 실패했습니다. 다시 시도해주세요.");
+      alert("Failed to submit evaluation. Please try again.");
     }
   };
 
@@ -407,8 +407,8 @@ export default function IdeaDetailModal({
   // 사용자 역할 확인
   const userMember = team?.members.find((member) => member.isUser);
   const userRoles = userMember?.roles || [];
-  const canUpdateIdeas = userRoles.includes("아이디어 생성하기");
-  const hasEvaluationRole = userRoles.includes("아이디어 평가하기");
+  const canUpdateIdeas = userRoles.includes("Idea Generation");
+  const hasEvaluationRole = userRoles.includes("Idea Evaluation");
   const hasEvaluationRelationship = team && idea ? canEvaluateIdea("나", idea.author, team) : false;
   const canEvaluateIdeas = hasEvaluationRole && hasEvaluationRelationship;
 
@@ -445,7 +445,7 @@ export default function IdeaDetailModal({
                 </svg>
               </button>
               <h2 className="text-xl font-bold text-gray-900">
-                아이디어 #
+                Idea #
                 {ideasSortedByCreation.findIndex((i) => i.id === idea.id) + 1}
               </h2>
               <button
@@ -518,7 +518,7 @@ export default function IdeaDetailModal({
                 {/* 아이디어 제목 */}
                 <div className="mb-6">
                   <label className="block text-base font-semibold text-gray-800 mb-3 uppercase tracking-wide border-b border-gray-200 pb-2">
-                    아이디어(제목)
+                    Object
                   </label>
                   {isEditMode ? (
                     <textarea
@@ -533,7 +533,7 @@ export default function IdeaDetailModal({
                       }
                       className="w-full p-3 border border-gray-300 rounded-lg resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       rows={1}
-                      placeholder="아이디어의 대상이나 객체에 대해 설명하세요..."
+                      placeholder="Describe the target or object of the idea..."
                     />
                   ) : (
                     <h1 className="text-2xl font-bold text-gray-900">
@@ -542,10 +542,10 @@ export default function IdeaDetailModal({
                   )}
                 </div>
 
-                {/* 기능 설명 */}
+                {/* Function Description */}
                 <div className="mb-6">
                   <label className="block text-base font-semibold text-gray-800 mb-3 uppercase tracking-wide border-b border-gray-200 pb-2">
-                    기능 요약
+                    Function
                   </label>
                   {isEditMode ? (
                     <textarea
@@ -560,7 +560,7 @@ export default function IdeaDetailModal({
                       }
                       className="w-full p-3 border border-gray-300 rounded-lg resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       rows={1}
-                      placeholder="아이디어의 기능이나 목적에 대해 설명하세요..."
+                      placeholder="Describe the function or purpose of the idea..."
                     />
                   ) : (
                     <p className="text-gray-700 leading-relaxed">
@@ -574,7 +574,7 @@ export default function IdeaDetailModal({
                   {isEditMode ? (
                     <div className="space-y-4">
                       <div className="flex items-center justify-between">
-                        <label className="block text-sm font-medium text-gray-700">핵심 동작(행동)</label>
+                        <label className="block text-sm font-medium text-gray-700">Behavior</label>
                         <button
                           onClick={() =>
                             setBehaviorPairs([
@@ -585,7 +585,7 @@ export default function IdeaDetailModal({
                           className="px-3 py-1 text-sm bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
                           type="button"
                         >
-                          + 행동 요소 추가
+                          + Add Behavior Element
                         </button>
                       </div>
                       
@@ -601,7 +601,7 @@ export default function IdeaDetailModal({
                                 setBehaviorPairs(newPairs);
                               }}
                               className="flex-1 mr-2 p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                              placeholder="행동 요소명 (예: 동작, 반응, ...)"
+                              placeholder="Behavior element name (e.g., action, reaction, ...)"
                             />
                             {behaviorPairs.length > 1 && (
                               <button
@@ -628,7 +628,7 @@ export default function IdeaDetailModal({
                             }}
                             className="w-full p-3 border border-gray-300 rounded-lg resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                             rows={1}
-                            placeholder={`${pair.key || '행동 요소'}에 대한 설명을 입력하세요...`}
+                            placeholder={`Enter description for ${pair.key || 'behavior element'}...`}
                           />
                         </div>
                       ))}
@@ -636,7 +636,7 @@ export default function IdeaDetailModal({
                   ) : (
                     <div>
                       <label className="text-base font-semibold text-gray-800 mb-3 uppercase tracking-wide border-b border-gray-200 pb-2 block">
-                        핵심 동작(행동)
+                        Behavior
                       </label>
                       <div className="text-gray-700 leading-relaxed">
                         {renderSafeData(idea.content.behavior)}
@@ -650,7 +650,7 @@ export default function IdeaDetailModal({
                   {isEditMode ? (
                     <div className="space-y-4">
                       <div className="flex items-center justify-between">
-                        <label className="block text-sm font-medium text-gray-700">구조</label>
+                        <label className="block text-sm font-medium text-gray-700">Structure</label>
                         <button
                           onClick={() =>
                             setStructurePairs([
@@ -661,7 +661,7 @@ export default function IdeaDetailModal({
                           className="px-3 py-1 text-sm bg-green-500 text-white rounded-md hover:bg-green-600 transition-colors"
                           type="button"
                         >
-                          + 구조 요소 추가
+                          + Add Structure Element
                         </button>
                       </div>
                       
@@ -677,7 +677,7 @@ export default function IdeaDetailModal({
                                 setStructurePairs(newPairs);
                               }}
                               className="flex-1 mr-2 p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                              placeholder="구조 요소명 (예: 형태, 배치, ...)"
+                              placeholder="Structure element name (e.g., form, layout, ...)"
                             />
                             {structurePairs.length > 1 && (
                               <button
@@ -704,7 +704,7 @@ export default function IdeaDetailModal({
                             }}
                             className="w-full p-3 border border-gray-300 rounded-lg resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                             rows={1}
-                            placeholder={`${pair.key || '구조 요소'}에 대한 설명을 입력하세요...`}
+                            placeholder={`Enter description for ${pair.key || 'structure element'}...`}
                           />
                         </div>
                       ))}
@@ -712,7 +712,7 @@ export default function IdeaDetailModal({
                   ) : (
                     <div>
                       <label className="text-base font-semibold text-gray-800 mb-3 uppercase tracking-wide border-b border-gray-200 pb-2 block">
-                        구조
+                        Structure
                       </label>
                       <div className="text-gray-700 leading-relaxed">
                         {renderSafeData(idea.content.structure)}
@@ -731,13 +731,13 @@ export default function IdeaDetailModal({
                         onClick={handleSave}
                         className="flex-1 bg-black text-white py-3 px-4 rounded-lg font-medium hover:bg-gray-800 transition-colors"
                       >
-                        저장하기
+                        Save
                       </button>
                       <button
                         onClick={handleCancel}
                         className="flex-1 bg-gray-500 text-white py-3 px-4 rounded-lg font-medium hover:bg-gray-600 transition-colors"
                       >
-                        취소
+                        Cancel
                       </button>
                     </>
                   ) : (
@@ -747,7 +747,7 @@ export default function IdeaDetailModal({
                           onClick={handleEditModeToggle}
                           className="flex-1 bg-black text-white py-3 px-4 rounded-lg font-medium hover:bg-gray-800 transition-colors"
                         >
-                          아이디어 업데이트
+                          Update Idea
                         </button>
                       )}
                       {canEvaluateIdeas && (
@@ -755,16 +755,16 @@ export default function IdeaDetailModal({
                           onClick={() => setShowEvaluationForm(true)}
                           className="flex-1 bg-blue-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-blue-700 transition-colors"
                         >
-                          아이디어 평가하기
+                          Evaluate Idea
                         </button>
                       )}
                       {!canUpdateIdeas && !canEvaluateIdeas && (
                         <div className="flex-1 text-center py-3 px-4 text-gray-500 text-sm">
-                          {!hasEvaluationRole 
-                            ? "권한이 없어 편집 및 평가할 수 없습니다"
+                          {!hasEvaluationRole
+                            ? "No permission to edit or evaluate"
                             : !hasEvaluationRelationship
-                            ? "관계가 연결되지 않아 평가할 수 없습니다"
-                            : "편집 및 평가할 수 없습니다"}
+                            ? "Cannot evaluate due to no relationship connection"
+                            : "Cannot edit or evaluate"}
                         </div>
                       )}
                     </>
@@ -807,7 +807,7 @@ export default function IdeaDetailModal({
                       <div className="grid grid-cols-3 gap-2 mb-3">
                         <div className="text-center">
                           <div className="text-xs text-gray-500 mb-1">
-                            참신성
+                            Novelty
                           </div>
                           <div className="text-lg font-bold text-gray-900">
                             {evaluation.scores.novelty}
@@ -815,7 +815,7 @@ export default function IdeaDetailModal({
                         </div>
                         <div className="text-center">
                           <div className="text-xs text-gray-500 mb-1">
-                            완성도
+                            Completeness
                           </div>
                           <div className="text-lg font-bold text-gray-900">
                             {evaluation.scores.completeness}
@@ -823,7 +823,7 @@ export default function IdeaDetailModal({
                         </div>
                         <div className="text-center">
                           <div className="text-xs text-gray-500 mb-1">
-                            품질
+                            Quality
                           </div>
                           <div className="text-lg font-bold text-gray-900">
                             {evaluation.scores.quality}
@@ -832,7 +832,7 @@ export default function IdeaDetailModal({
                       </div>
                       <div>
                         <div className="text-xs text-gray-500 mb-1">
-                          코멘트
+                          Comment
                         </div>
                         <p className="text-sm text-gray-700">
                           {evaluation.comment}
@@ -844,13 +844,13 @@ export default function IdeaDetailModal({
 
                 {idea.evaluations.length === 0 && !showEvaluationForm && (
                   <div className="text-center py-8 text-gray-500">
-                    <p className="text-sm">아직 평가가 없습니다</p>
+                    <p className="text-sm">No evaluations yet</p>
                     {canEvaluateIdeas && (
                       <button
                         onClick={() => setShowEvaluationForm(true)}
                         className="mt-2 text-blue-600 hover:text-blue-800 text-sm font-medium"
                       >
-                        첫 번째 평가를 남겨보세요
+                        Leave the first evaluation
                       </button>
                     )}
                   </div>
@@ -860,13 +860,13 @@ export default function IdeaDetailModal({
                 {showEvaluationForm && canEvaluateIdeas && (
                   <div className="bg-white border border-gray-200 rounded-lg p-4">
                     <h4 className="text-sm font-bold text-gray-900 mb-4">
-                      새 평가 작성
+                      Write New Evaluation
                     </h4>
 
                     {/* Novelty */}
                     <div className="mb-4">
                       <label className="text-sm font-medium text-gray-700 mb-2 block">
-                        참신성 (1=매우 나쁨 ~ 7=매우 좋음)
+                        Novelty (1=Very Bad ~ 7=Very Good)
                       </label>
                       <div className="flex justify-between gap-1">
                         {[1, 2, 3, 4, 5, 6, 7].map((value) => (
@@ -893,7 +893,7 @@ export default function IdeaDetailModal({
                     {/* Completeness */}
                     <div className="mb-4">
                       <label className="text-sm font-medium text-gray-700 mb-2 block">
-                        완성도 (1=매우 나쁨 ~ 7=매우 좋음)
+                        Completeness (1=Very Bad ~ 7=Very Good)
                       </label>
                       <div className="flex justify-between gap-1">
                         {[1, 2, 3, 4, 5, 6, 7].map((value) => (
@@ -920,7 +920,7 @@ export default function IdeaDetailModal({
                     {/* Quality */}
                     <div className="mb-4">
                       <label className="text-sm font-medium text-gray-700 mb-2 block">
-                        품질 (1=매우 나쁨 ~ 7=매우 좋음)
+                        Quality (1=Very Bad ~ 7=Very Good)
                       </label>
                       <div className="flex justify-between gap-1">
                         {[1, 2, 3, 4, 5, 6, 7].map((value) => (
@@ -947,7 +947,7 @@ export default function IdeaDetailModal({
                     {/* Comment */}
                     <div className="mb-4">
                       <label className="text-sm font-medium text-gray-700 mb-2 block">
-                        코멘트
+                        Comment
                       </label>
                       <textarea
                         value={evaluationFormData.comment}
@@ -961,7 +961,7 @@ export default function IdeaDetailModal({
                         }
                         className="w-full p-3 border border-gray-300 rounded text-base resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         rows={1}
-                        placeholder="평가 의견을 작성해주세요..."
+                        placeholder="Please write your evaluation comments..."
                       />
                     </div>
 
@@ -978,7 +978,7 @@ export default function IdeaDetailModal({
                         }
                         className="flex-1 bg-blue-600 text-white py-2 px-3 rounded text-sm font-medium disabled:bg-gray-400 disabled:cursor-not-allowed hover:bg-blue-700 transition-colors"
                       >
-                        {isSubmittingEvaluation ? "제출 중..." : "제출"}
+                        {isSubmittingEvaluation ? "Submitting..." : "Submit"}
                       </button>
                       <button
                         onClick={() => {
@@ -992,7 +992,7 @@ export default function IdeaDetailModal({
                         }}
                         className="px-3 py-2 text-gray-600 hover:text-gray-800 text-sm"
                       >
-                        취소
+                        Cancel
                       </button>
                     </div>
                   </div>

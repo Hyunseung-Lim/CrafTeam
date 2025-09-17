@@ -13,7 +13,6 @@
  */
 
 import {
-  getAgentMemory,
   updateAgentMemory,
   getAgentById,
   getTeamById,
@@ -77,14 +76,14 @@ export async function createNewAgentMemory(
     let otherAgentProfile: any;
 
     if (member.isUser) {
-      otherAgentId = "나";
-      otherAgentName = "나";
-      // Check if user is actually the leader
-      const userRole = member.isLeader ? "팀 리더" : "팀원";
-      const userSkills = member.isLeader ? "리더십" : "협업";
+      otherAgentId = "Me";
+      otherAgentName = "Me";
+      // User role and skills
+      const userRole = "팀원";
+      const userSkills = "협업";
       otherAgentProfile = {
-        id: "나",
-        name: "나",
+        id: "Me",
+        name: "Me",
         professional: userRole,
         personality: "알 수 없음",
         skills: userSkills,
@@ -104,15 +103,15 @@ export async function createNewAgentMemory(
       };
     }
 
-    // 관계 찾기 - 사용자의 경우 "나"와 실제 이름 모두 확인
+    // 관계 찾기 - 사용자의 경우 "Me"와 실제 이름 모두 확인
     
     const relationship = team.relationships.find(
       (rel) => {
         if (member.isUser) {
-          // 사용자의 경우 "나" 또는 실제 user 이름으로 관계 찾기
+          // 사용자의 경우 "Me" 또는 실제 user 이름으로 관계 찾기
           const match = (
-            (rel.from === agentProfile.name && (rel.to === "나" || rel.to === otherAgentName)) ||
-            (rel.from === "나" && rel.to === agentProfile.name) ||
+            (rel.from === agentProfile.name && (rel.to === "Me" || rel.to === otherAgentName)) ||
+            (rel.from === "Me" && rel.to === agentProfile.name) ||
             (rel.from === otherAgentName && rel.to === agentProfile.name)
           );
           return match;
@@ -128,7 +127,7 @@ export async function createNewAgentMemory(
     );
     
 
-    const relationKey = member.isUser ? "나" : otherAgentId;
+    const relationKey = member.isUser ? "Me" : otherAgentId;
     relations[relationKey] = {
       agentInfo: otherAgentProfile,
       relationship: relationship ? relationship.type : (member.isUser ? "PEER" : "NULL"),
@@ -428,7 +427,8 @@ export async function getNewAgentMemory(
     }
 
     // 기존 메모리를 새로운 구조로 마이그레이션 시도
-    const oldMemory = await getAgentMemory(agentId);
+    const oldMemoryData = await redis.get(`memory:${agentId}`);
+    const oldMemory = oldMemoryData && typeof oldMemoryData === 'string' ? JSON.parse(oldMemoryData) : null;
     if (oldMemory) {
       console.log(`🔄 기존 메모리를 새로운 구조로 마이그레이션: ${agentId}`);
       return await migrateOldToNewMemory(agentId, oldMemory);
@@ -617,7 +617,8 @@ export async function migrateAllAgentsToNewMemory(
         }
 
         // 기존 메모리 마이그레이션
-        const oldMemory = await getAgentMemory(agentId);
+        const oldMemoryData = await redis.get(`memory:${agentId}`);
+        const oldMemory = oldMemoryData && typeof oldMemoryData === 'string' ? JSON.parse(oldMemoryData) : null;
         if (oldMemory) {
           await migrateOldToNewMemory(agentId, oldMemory);
           console.log(`✅ ${agentId}: 마이그레이션 완료`);

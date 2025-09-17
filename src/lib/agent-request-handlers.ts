@@ -82,7 +82,7 @@ export async function handleGenerateIdeaRequestDirect(
     const agentProfile = {
       ...baseAgentProfile,
       roles: teamMember?.roles || [],
-      isLeader: teamMember?.isLeader || false
+      // isLeader: teamMember?.isLeader || false // removed unused property
     };
 
     await setAgentState(teamId, agentId, {
@@ -109,7 +109,7 @@ export async function handleGenerateIdeaRequestDirect(
     
     // Helper function to get author name
     const getAuthorName = async (authorId: string) => {
-      if (authorId === "나") return "나";
+      if (authorId === "Me") return "Me";
       
       const member = team?.members.find((m: any) => m.agentId === authorId);
       if (member && !member.isUser) {
@@ -185,16 +185,16 @@ export async function handleGenerateIdeaRequestDirect(
       author: agentId,
       timestamp: new Date().toISOString(),
       content: {
-        object: generatedContent.object || "생성된 아이디어",
-        function: generatedContent.function || "기능 설명",
+        object: generatedContent.object || "Generated Idea",
+        function: generatedContent.function || "Function Description",
         behavior:
           typeof generatedContent.behavior === "object"
             ? JSON.stringify(generatedContent.behavior)
-            : generatedContent.behavior || "동작 설명",
+            : generatedContent.behavior || "Behavior Description",
         structure:
           typeof generatedContent.structure === "object"
             ? JSON.stringify(generatedContent.structure)
-            : generatedContent.structure || "구조 설명",
+            : generatedContent.structure || "Structure Description",
       },
       evaluations: [],
     });
@@ -203,7 +203,7 @@ export async function handleGenerateIdeaRequestDirect(
       sender: agentId,
       type: "system",
       payload: {
-        content: `${requestData.requesterName}의 요청에 따라 ${preAnalysis.decision === "Update" ? "기존 아이디어를 개선한" : "새로운"} 아이디어를 생성했습니다.`,
+        content: `Generated ${preAnalysis.decision === "Update" ? "an improved" : "a new"} idea based on ${requestData.requesterName}'s request.`,
       },
     });
 
@@ -266,36 +266,25 @@ export async function handleGiveFeedbackRequestDirect(
     const agentProfile = {
       ...baseAgentProfile,
       roles: teamMember?.roles || [],
-      isLeader: teamMember?.isLeader || false
+      // isLeader: teamMember?.isLeader || false // removed unused property
     };
 
     const requesterName = requestData.requesterName;
     const requesterId = requestData.requesterId;
 
-    // 사용자가 직접 피드백을 요청한 경우 - 새로운 세션 생성하지 않고 기존 세션에 응답
-    if (requesterId === "나" || requesterName === "나") {
+    // 사용자가 직접 피드백을 요청한 경우 - 실제 피드백 세션 생성
+    if (requesterId === "Me" || requesterName === "Me") {
       console.log(
-        `👤 사용자가 ${agentProfile.name}에게 피드백을 요청함 - 기존 세션에 응답`
+        `👤 사용자가 ${agentProfile.name}에게 피드백을 요청함 - 피드백 세션 생성`
       );
-      
-      // 사용자가 이미 피드백 세션을 시작했으므로, AI는 응답만 하면 됨
-      // 새로운 세션을 만들지 않고 여기서 처리 완료
-      await addChatMessage(teamId, {
-        sender: agentId,
-        type: "system",
-        payload: {
-          content: `피드백 요청을 확인했습니다. 곧 피드백을 제공하겠습니다.`,
-        },
-      });
-      
-      console.log(`✅ ${agentProfile.name} 사용자 피드백 요청 확인 완료`);
-      return;
+    } else {
+      // AI 에이전트가 다른 AI에게 피드백을 요청한 경우
+      console.log(
+        `🤖 AI 에이전트 ${requesterName}가 ${agentProfile.name}에게 피드백 요청 - 새로운 세션 생성`
+      );
     }
 
-    // AI 에이전트가 다른 AI에게 피드백을 요청한 경우에만 새로운 세션 생성
-    console.log(
-      `🤖 AI 에이전트 ${requesterName}가 ${agentProfile.name}에게 피드백 요청 - 새로운 세션 생성`
-    );
+    // 공통 피드백 세션 생성 로직
 
     await setAgentState(teamId, agentId, {
       agentId,
@@ -338,10 +327,40 @@ export async function handleGiveFeedbackRequestDirect(
       return;
     }
 
-    // 사용자가 요청한 피드백이므로 preFeedbackPrompt에 요청 컨텍스트 전달
-    // 실제 사용자("나")의 아이디어를 가져오기
-    const userIdeas = feedbackContext.existingIdeas
-      .filter(idea => idea.authorId === "나")
+    // 피드백 대상 결정 먼저 수행 (요청에서 지정된 대상 우선)
+    let targetMember;
+
+    if (requestData.payload?.feedbackTarget) {
+      // 요청에서 피드백 대상이 명시된 경우 해당 대상 사용
+      const targetId = requestData.payload.feedbackTarget;
+      const member = team.members.find(m =>
+        m.agentId === targetId ||
+        (m.isUser && (targetId === "Me" || targetId === "나"))
+      );
+
+      if (member) {
+        targetMember = {
+          id: member.isUser ? "Me" : member.agentId,
+          name: member.isUser ? "Me" : member.agentId,
+          isUser: member.isUser
+        };
+      }
+    }
+
+    // 대상이 지정되지 않은 경우 기본값으로 사용자 설정
+    if (!targetMember) {
+      targetMember = {
+        id: "Me",
+        name: "Me",
+        isUser: true
+      };
+    }
+
+    console.log(`🎯 피드백 대상 결정: ${targetMember.name} (${targetMember.id})`);
+
+    // 대상 멤버의 아이디어를 가져오기
+    const targetIdeas = feedbackContext.existingIdeas
+      .filter(idea => idea.authorId === targetMember.id)
       .map(idea => ({
         content: {
           object: idea.object,
@@ -351,19 +370,19 @@ export async function handleGiveFeedbackRequestDirect(
         }
       }));
 
-    console.log(`🔍 사용자 아이디어 확인 (${userIdeas.length}개):`, 
-      userIdeas.map(idea => idea.content.object));
+    console.log(`🔍 대상 멤버 아이디어 확인 (${targetIdeas.length}개):`,
+      targetIdeas.map(idea => idea.content.object));
 
     const { preFeedbackPrompt } = await import("@/core/prompts");
     const preFeedbackPromptText = preFeedbackPrompt(
-      "나", // 기본적으로 사용자를 대상으로 설정
-      userIdeas, // 실제 사용자 아이디어 전달
+      targetMember.name || "Unknown", // 실제 피드백 대상 사용
+      targetIdeas, // 대상 멤버의 아이디어 전달
       feedbackContext.agentMemory,
       agentProfile,
       {
         isRequestBased: true,
         requesterName,
-        requestMessage: requestData.payload?.message || "피드백을 요청했습니다.",
+        requestMessage: requestData.payload?.message || "Requested feedback.",
         teamContext: {
           teamName: team.teamName || "팀",
           topic: team.topic || "아이디에이션",
@@ -377,20 +396,13 @@ export async function handleGiveFeedbackRequestDirect(
     const feedbackStrategy = await getJsonResponse(preFeedbackPromptText, agentProfile);
 
     console.log(`🎯 ${agentProfile.name} 피드백 전략 결정 완료:`, {
-      target: feedbackStrategy.targetMember?.name || "나",
+      target: feedbackStrategy.targetMember?.name || targetMember.name,
       type: feedbackStrategy.feedbackType,
       reasoning: feedbackStrategy.reasoning,
     });
 
-    // 요청 기반 피드백에서는 targetMember가 사용자("나")이므로 적절히 처리
-    const targetMember = {
-      id: "나",
-      name: "나",
-      isUser: true
-    };
-
     // 피드백 전략 수립 후 대상이 현재 피드백 세션 중인지 재확인
-    const isTargetBusy = await isInActiveFeedbackSession(targetMember.id);
+    const isTargetBusy = await isInActiveFeedbackSession(targetMember.id || "unknown");
 
     if (isTargetBusy) {
       console.log(
@@ -424,8 +436,8 @@ export async function handleGiveFeedbackRequestDirect(
     const adaptedFeedbackStrategy = {
       targetMember,
       feedbackType: feedbackStrategy.feedbackType || "general_collaboration",
-      reasoning: feedbackStrategy.reasoning || "요청 기반 피드백",
-      feedbackMessage: `${requesterName}의 요청에 따른 피드백을 제공합니다.`,
+      reasoning: feedbackStrategy.reasoning || "Request-based feedback",
+      feedbackMessage: `Providing feedback based on ${requesterName}'s request.`,
       ...feedbackStrategy
     };
 
@@ -459,7 +471,7 @@ export async function handleGiveFeedbackRequestDirect(
         sender: agentId,
         type: "system",
         payload: {
-          content: `피드백 요청 처리 중 오류가 발생했습니다.`,
+          content: `An error occurred while processing feedback request.`,
         },
       });
     }
@@ -553,7 +565,7 @@ async function performIdeaEvaluation(
   const ideas = await getIdeas(teamId);
   const allIdeas = ideas.map((idea, index) => ({
     ideaNumber: index + 1,
-    authorName: idea.author === "나" ? "나" : idea.author,
+    authorName: idea.author === "Me" ? "Me" : idea.author,
     object: idea.content.object,
     function: idea.content.function,
     behavior: idea.content.behavior,
@@ -575,9 +587,24 @@ async function performIdeaEvaluation(
     console.log(`📊 ${agentProfile.name} 평가 전략:`, preAnalysis);
     
     // 전략에 따라 특정 아이디어 선택하거나 랜덤 선택
-    const targetIdea = preAnalysis.targetIdeaNumber 
-      ? ideas.find((_, index) => index + 1 === preAnalysis.targetIdeaNumber)
-      : unevaluatedIdeas[Math.floor(Math.random() * unevaluatedIdeas.length)];
+    let targetIdea;
+    if (preAnalysis.targetIdeaNumber) {
+      // targetIdeaNumber는 전체 아이디어 목록의 번호이므로 실제 아이디어를 찾아야 함
+      const fullIdea = allIdeas.find(idea => idea.ideaNumber === preAnalysis.targetIdeaNumber);
+      if (fullIdea) {
+        // 전체 아이디어에서 평가 가능한 아이디어만 필터링해서 찾기
+        targetIdea = unevaluatedIdeas.find(idea =>
+          idea.content.object === fullIdea.object &&
+          idea.content.function === fullIdea.function
+        );
+      }
+      // 찾지 못하면 첫 번째 평가 가능한 아이디어 선택
+      if (!targetIdea) {
+        targetIdea = unevaluatedIdeas[0];
+      }
+    } else {
+      targetIdea = unevaluatedIdeas[Math.floor(Math.random() * unevaluatedIdeas.length)];
+    }
     
     if (!targetIdea) {
       console.log(`⚠️ 평가할 아이디어를 찾을 수 없음`);
@@ -621,7 +648,7 @@ async function performIdeaEvaluation(
         sender: agentId,
         type: "system",
         payload: {
-          content: `요청받은 아이디어를 평가했습니다.`,
+          content: `Evaluated the requested idea.`,
         },
       });
     } else {
@@ -630,7 +657,7 @@ async function performIdeaEvaluation(
         sender: agentId,
         type: "system",
         payload: {
-          content: `평가 저장에 실패했습니다. (오류: ${response.status})`,
+          content: `Failed to save evaluation. (Error: ${response.status})`,
         },
       });
     }
@@ -738,11 +765,11 @@ async function prepareFeedbackContext(
   const humanMember = team.members.find((member: TeamMember) => member.isUser);
   if (humanMember) {
     teamMembers.push({
-      id: "나",
-      name: "나",
+      id: "Me",
+      name: "Me",
       isUser: true,
       roles: humanMember.roles || [],
-      isAvailable: !busyAgents.has("나"),
+      isAvailable: !busyAgents.has("Me"),
     });
   }
 
@@ -750,8 +777,8 @@ async function prepareFeedbackContext(
     ideaNumber: index + 1,
     authorId: idea.author,
     authorName:
-      idea.author === "나"
-        ? "나"
+      idea.author === "Me"
+        ? "Me"
         : (() => {
             const member = team?.members.find(
               (tm: TeamMember) => tm.agentId === idea.author
@@ -885,13 +912,11 @@ async function executeFeedbackSession(
         sender: agentId,
         type: "system",
         payload: {
-          content: `${requestData.requesterName}의 요청에 따라 ${
-            targetMember.name
-          }와 ${
+          content: `Starting ${
             feedbackStrategy.feedbackType === "specific_idea"
-              ? "특정 아이디어에 대한"
-              : "협업"
-          } 피드백 세션을 시작합니다.`,
+              ? "a specific idea"
+              : "a collaboration"
+          } feedback session with ${targetMember.name} based on ${requestData.requesterName}'s request.`,
         },
       });
 

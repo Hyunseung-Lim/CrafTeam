@@ -31,7 +31,6 @@ export default function MiniRelationshipNetwork({
       id: actualId,
       name: displayName,
       isUser: member.isUser,
-      isLeader: member.isLeader,
     };
     
     return node;
@@ -39,7 +38,6 @@ export default function MiniRelationshipNetwork({
 
   // Create edges from relationships - using the same logic as review page
   const edges: any[] = [];
-  
 
   if (team.relationships && team.relationships.length > 0) {
     team.relationships.forEach((relationship) => {
@@ -47,23 +45,22 @@ export default function MiniRelationshipNetwork({
       if (relationship.type === "NULL") {
         return;
       }
-      
+
       // Convert from and to to actual member IDs using centralized utilities
       const fromMember = findMemberById(team, relationship.from);
       const toMember = findMemberById(team, relationship.to);
-      
+
       if (!fromMember || !toMember) {
         return; // Skip invalid relationships
       }
-      
+
       const fromId = getMemberActualId(fromMember);
       const toId = getMemberActualId(toMember);
-      
+
       // Add edge if both nodes exist
       const fromNode = nodes.find(n => n.id === fromId);
       const toNode = nodes.find(n => n.id === toId);
-      
-      
+
       if (fromNode && toNode) {
         const edge = {
           from: fromId,
@@ -218,9 +215,9 @@ export default function MiniRelationshipNetwork({
               cx={node.x}
               cy={node.y}
               r="8"
-              fill={node.isUser ? "#dbeafe" : "#f3e8ff"}
-              stroke={node.isLeader ? "#eab308" : (node.isUser ? "#3b82f6" : "#8b5cf6")}
-              strokeWidth={node.isLeader ? "2" : "1"}
+              fill={node.isUser ? "#00C850" : "#2B7FFF"}
+              stroke={node.isUser ? "#00C850" : "#2B7FFF"}
+              strokeWidth="1"
             />
             <text
               x={node.x}

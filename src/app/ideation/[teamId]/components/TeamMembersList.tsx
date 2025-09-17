@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { User, Crown, Users, Network } from "lucide-react";
+import { User, Users, Network } from "lucide-react";
 import { Team, AIAgent, RELATIONSHIP_TYPES } from "@/lib/types";
 import { AgentStateInfo } from "../hooks/useAgentStates";
 import AgentStateIndicator from "./AgentStateIndicator";
@@ -28,14 +28,25 @@ export default function TeamMembersList({
 }: TeamMembersListProps) {
   const [hoveredMember, setHoveredMember] = useState<string | null>(null);
 
+  // Helper function to translate Korean role names to English
+  const translateRole = (role: string): string => {
+    const roleTranslations: Record<string, string> = {
+      "아이디어 생성하기": "Idea Generation",
+      "아이디어 평가하기": "Idea Evaluation",
+      "피드백하기": "Feedback",
+      "요청하기": "Request"
+    };
+    return roleTranslations[role] || role;
+  };
+
   return (
     <div className="w-80 bg-white border-r border-gray-200 p-4 relative">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-semibold text-gray-900">팀 멤버</h2>
+        <h2 className="text-lg font-semibold text-gray-900">Team Members</h2>
         {!isConnected && (
           <div className="flex items-center gap-1 text-xs text-amber-600 bg-amber-50 px-2 py-1 rounded-full">
             <div className="w-2 h-2 bg-amber-500 rounded-full animate-pulse"></div>
-            연결 재시도 중
+            Reconnecting
           </div>
         )}
       </div>
@@ -47,10 +58,10 @@ export default function TeamMembersList({
           <button
             onClick={() => onToggleLayout(!useOriginalLayout)}
             className="absolute top-2 right-2 flex items-center gap-1 px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
-            title={useOriginalLayout ? "설정된 위치로 전환" : "원형 배치로 전환"}
+            title={useOriginalLayout ? "Switch to saved positions" : "Switch to circular layout"}
           >
             <Network className="h-3 w-3" />
-            {useOriginalLayout ? "설정 위치" : "원형 배치"}
+            {useOriginalLayout ? "Saved Layout" : "Circular Layout"}
           </button>
         )}
       </div>
@@ -61,8 +72,8 @@ export default function TeamMembersList({
             ? null
             : agents.find((a) => a.id === member.agentId);
           const memberName = member.isUser
-            ? "나"
-            : agent?.name || `에이전트 ${member.agentId}`;
+            ? "Me"
+            : agent?.name || `Agent ${member.agentId}`;
 
           return (
             <div
@@ -80,14 +91,16 @@ export default function TeamMembersList({
             >
               <div className="flex-shrink-0">
                 <div
-                  className={`w-6 h-6 rounded-full flex items-center justify-center ${
-                    member.isUser ? "bg-blue-100" : "bg-purple-100"
-                  }`}
+                  className={`w-6 h-6 rounded-full flex items-center justify-center`}
+                  style={{
+                    backgroundColor: member.isUser ? "#00C85020" : "#2B7FFF20"
+                  }}
                 >
                   <User
-                    className={`h-3 w-3 ${
-                      member.isUser ? "text-blue-600" : "text-purple-600"
-                    }`}
+                    className="h-3 w-3"
+                    style={{
+                      color: member.isUser ? "#00C850" : "#2B7FFF"
+                    }}
                   />
                 </div>
               </div>
@@ -97,12 +110,9 @@ export default function TeamMembersList({
                   <span className="text-sm font-medium text-gray-900 truncate">
                     {memberName}
                   </span>
-                  {member.isLeader && (
-                    <Crown className="h-3 w-3 text-yellow-600 flex-shrink-0" />
-                  )}
                 </div>
 
-                {/* 에이전트 상태 표시 */}
+                {/* Agent state display */}
                 {!member.isUser && member.agentId && (
                   <div className="mt-1">
                     <AgentStateIndicator
@@ -119,7 +129,7 @@ export default function TeamMembersList({
                       key={roleIndex}
                       className="text-xs px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-600 font-medium"
                     >
-                      {role}
+                      {translateRole(role)}
                     </span>
                   ))}
                 </div>
@@ -128,8 +138,11 @@ export default function TeamMembersList({
                 {hoveredMember === (member.agentId || `user-${index}`) && agent && (
                   <div className="absolute left-full ml-2 top-0 z-50 w-80 bg-white border border-gray-200 rounded-lg shadow-lg p-4">
                     <div className="flex items-center gap-2 mb-3">
-                      <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center">
-                        <User className="h-4 w-4 text-purple-600" />
+                      <div
+                        className="w-8 h-8 rounded-full flex items-center justify-center"
+                        style={{ backgroundColor: "#2B7FFF20" }}
+                      >
+                        <User className="h-4 w-4" style={{ color: "#2B7FFF" }} />
                       </div>
                       <div>
                         <h3 className="font-semibold text-gray-900">{agent.name}</h3>
@@ -140,46 +153,46 @@ export default function TeamMembersList({
                     <div className="space-y-2 text-sm">
                       {agent.age && (
                         <div className="flex justify-between">
-                          <span className="text-gray-600">나이:</span>
-                          <span className="font-medium">{agent.age}세</span>
+                          <span className="text-gray-600">Age:</span>
+                          <span className="font-medium">{agent.age} years old</span>
                         </div>
                       )}
                       
                       {agent.gender && (
                         <div className="flex justify-between">
-                          <span className="text-gray-600">성별:</span>
+                          <span className="text-gray-600">Gender:</span>
                           <span className="font-medium">{agent.gender}</span>
                         </div>
                       )}
                       
                       {agent.education && (
                         <div className="flex justify-between">
-                          <span className="text-gray-600">학력:</span>
+                          <span className="text-gray-600">Education:</span>
                           <span className="font-medium">{agent.education}</span>
                         </div>
                       )}
                       
                       <div className="flex justify-between">
-                        <span className="text-gray-600">전문분야:</span>
+                        <span className="text-gray-600">Professional:</span>
                         <span className="font-medium">{agent.professional}</span>
                       </div>
                       
                       <div className="pt-2 border-t border-gray-100">
                         <div className="mb-2">
-                          <span className="text-gray-600 text-xs font-medium">스킬:</span>
+                          <span className="text-gray-600 text-xs font-medium">Skills:</span>
                           <p className="text-gray-800 text-xs mt-1">{agent.skills}</p>
                         </div>
                         
                         {agent.personality && (
                           <div className="mb-2">
-                            <span className="text-gray-600 text-xs font-medium">성격:</span>
+                            <span className="text-gray-600 text-xs font-medium">Personality:</span>
                             <p className="text-gray-800 text-xs mt-1">{agent.personality}</p>
                           </div>
                         )}
                         
                         {agent.value && (
                           <div className="mb-2">
-                            <span className="text-gray-600 text-xs font-medium">가치관:</span>
+                            <span className="text-gray-600 text-xs font-medium">Values:</span>
                             <p className="text-gray-800 text-xs mt-1">{agent.value}</p>
                           </div>
                         )}
@@ -191,7 +204,7 @@ export default function TeamMembersList({
                         <div className="flex items-center gap-1 mb-2">
                           <Users className="h-3 w-3 text-gray-500" />
                           <span className="text-gray-600 text-xs font-medium">
-                            {agent.name}의 관점에서 본 팀 관계
+                            Team relationships from {agent.name}'s perspective
                           </span>
                         </div>
                         <div className="space-y-1">
@@ -215,7 +228,7 @@ export default function TeamMembersList({
                               if (agentRelationships.length === 0) {
                                 return (
                                   <div className="text-xs text-gray-400 italic py-1">
-                                    다른 팀원들과의 관계가 설정되지 않았습니다
+                                    No relationships established with other team members
                                   </div>
                                 );
                               }
@@ -228,8 +241,8 @@ export default function TeamMembersList({
                                 
                                 // Find the other person's info
                                 let otherPersonName = otherPersonId;
-                                if (otherPersonId === "나") {
-                                  otherPersonName = "나";
+                                if (otherPersonId === "Me") {
+                                  otherPersonName = "Me";
                                 } else {
                                   // Check if it's an agent name ending with "봇"
                                   if (otherPersonId.endsWith("봇")) {
@@ -281,10 +294,10 @@ export default function TeamMembersList({
                             })()
                           ) : (
                             <div className="text-xs text-gray-400 italic py-1">
-                              <p className="mb-1">팀 관계가 설정되지 않았습니다</p>
+                              <p className="mb-1">No team relationships established</p>
                               <p className="text-xs text-gray-300">
-                                새 팀을 만들 때 관계 설정 단계에서<br />
-                                팀원 간 관계를 정의할 수 있습니다
+                                You can define relationships between team members<br />
+                                during the relationship setup step when creating a new team
                               </p>
                             </div>
                           )}

@@ -12,10 +12,10 @@ export interface AIAgent {
   id: string;
   name: string;
   age?: number;
-  gender?: "여자" | "남자" | "정의하지 않음" | "알 수 없음";
+  gender?: "Female" | "Male" | "Prefer not to say" | "Unknown";
   nationality?: string;
   major?: string;
-  education?: "고졸" | "대졸" | "석사" | "박사" | "기타";
+  education?: "High School Graduate" | "University Graduate" | "Master's Degree" | "Doctorate" | "Other";
   professional?: string; // 선택 필드로 변경
   skills: string;
   personality: string; // 필수 필드로 변경
@@ -47,15 +47,14 @@ export interface Team {
 export interface TeamMember {
   agentId: string | null; // AIAgent.id 외래 키 또는 사용자일 경우 null
   roles: AgentRole[];
-  isLeader: boolean;
   isUser: boolean;
   userProfile?: { // 사용자 프로필 정보 (isUser가 true인 경우)
     name: string;
     age?: number;
-    gender?: "여자" | "남자" | "정의하지 않음" | "알 수 없음";
+    gender?: "Female" | "Male" | "Prefer not to say" | "Unknown";
     nationality?: string;
     major?: string;
-    education?: "고졸" | "대졸" | "석사" | "박사" | "기타";
+    education?: "High School Graduate" | "University Graduate" | "Master's Degree" | "Doctorate" | "Other";
     professional?: string; // 선택 필드로 변경
     skills: string;
     personality: string; // 필수 필드로 변경
@@ -69,36 +68,36 @@ export interface TeamMember {
 
 // 에이전트 역할 타입
 export type AgentRole =
-  | "아이디어 생성하기"
-  | "아이디어 평가하기"
-  | "피드백하기"
-  | "요청하기";
+  | "Idea Generation"
+  | "Idea Evaluation"
+  | "Feedback"
+  | "Request";
 
 // 관계 타입 정의
 export const RELATIONSHIP_TYPES = {
   PEER: {
-    label: "동료",
+    label: "Peer",
     color: "#374151", // gray-700
     strokeWidth: 2,
     strokeDasharray: undefined,
     hidden: false,
   },
   SUPERVISOR: {
-    label: "상사-부하",
+    label: "Superior-Subordinate",
     color: "#111827", // gray-900
     strokeWidth: 2.5,
     strokeDasharray: undefined,
     hidden: false,
   },
   SUBORDINATE: {
-    label: "부하-상사",
+    label: "Subordinate-Superior",
     color: "#111827", // gray-900
     strokeWidth: 2.5,
     strokeDasharray: undefined,
     hidden: false,
   },
   NULL: {
-    label: "관계 없음",
+    label: "No Relationship",
     color: "#9ca3af", // gray-400
     strokeWidth: 1,
     strokeDasharray: "2,2",
@@ -118,15 +117,14 @@ export interface TeamMemberSlot {
   id: string; // A, B, C, D, E, F 또는 '나'
   agentId?: string | null; // 기존 에이전트의 ID (신규 생성 시에는 없음)
   roles: AgentRole[];
-  isLeader: boolean;
   isUser: boolean; // 사용자 본인인지 여부
   agent?: {
     name: string;
     age?: number;
-    gender?: "여자" | "남자" | "정의하지 않음" | "알 수 없음";
+    gender?: "Female" | "Male" | "Prefer not to say" | "Unknown";
     nationality?: string;
     major?: string;
-    education?: "고졸" | "대졸" | "석사" | "박사" | "기타";
+    education?: "High School Graduate" | "University Graduate" | "Master's Degree" | "Doctorate" | "Other";
     professional?: string; // 선택 필드로 변경
     skills: string;
     personality: string; // 필수 필드로 변경
@@ -152,10 +150,10 @@ export interface Conversation {
 export interface CreateAgentData {
   name: string;
   age?: number;
-  gender?: "여자" | "남자" | "정의하지 않음" | "알 수 없음";
+  gender?: "Female" | "Male" | "Prefer not to say" | "Unknown";
   nationality?: string;
   major?: string;
-  education?: "고졸" | "대졸" | "석사" | "박사" | "기타";
+  education?: "High School Graduate" | "University Graduate" | "Master's Degree" | "Doctorate" | "Other";
   professional?: string;
   skills?: string;
   personality?: string;
@@ -185,7 +183,7 @@ export interface Evaluation {
 
 // 아이디어 모델
 export interface Idea {
-  id: number;
+  id: string;
   author: string; // '나' 또는 agentId
   timestamp: string;
   content: {
@@ -408,7 +406,7 @@ export type FeedbackSessionStatus = "active" | "ended" | "completed";
 
 // 피드백 세션 참가자
 export interface FeedbackSessionParticipant {
-  id: string; // "나" 또는 agentId
+  id: string; // "Me" 또는 agentId
   name: string;
   isUser: boolean;
   joinedAt: string;
@@ -417,7 +415,7 @@ export interface FeedbackSessionParticipant {
 // 피드백 세션 메시지
 export interface FeedbackSessionMessage {
   id: string;
-  sender: string; // "나" 또는 agentId
+  sender: string; // "Me" 또는 agentId
   content: string;
   timestamp: string;
   type: "message" | "system";

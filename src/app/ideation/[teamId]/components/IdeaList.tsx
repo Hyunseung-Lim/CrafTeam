@@ -63,10 +63,10 @@ export default function IdeaList({
             {isAutoGenerating ? (
               <>
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                AI 아이디어 생성 중...
+                AI generating ideas...
               </>
             ) : (
-              "아이디어 추가하기 +"
+              "Create New Idea"
             )}
           </button>
         )}
@@ -78,8 +78,8 @@ export default function IdeaList({
               onChange={(e) => onSortChange(e.target.value as "latest" | "rating")}
               className="text-xs border border-gray-300 rounded px-2 py-1 bg-white"
             >
-              <option value="latest">최신순</option>
-              <option value="rating">평가순</option>
+              <option value="latest">Latest</option>
+              <option value="rating">By Rating</option>
             </select>
             
             {/* 필터 드롭다운 */}
@@ -96,27 +96,6 @@ export default function IdeaList({
             </select>
           </div>
 
-          <div className="flex items-center gap-1">
-            <button className="p-2 hover:bg-gray-100 rounded">
-              <div className="grid grid-cols-3 gap-1">
-                {[...Array(9)].map((_, i) => (
-                  <div key={i} className="w-1 h-1 bg-gray-400 rounded-full"></div>
-                ))}
-              </div>
-            </button>
-            <button className="p-2 hover:bg-gray-100 rounded">
-              <div className="flex flex-col gap-1">
-                {[...Array(3)].map((_, i) => (
-                  <div key={i} className="w-4 h-0.5 bg-gray-400"></div>
-                ))}
-              </div>
-            </button>
-            <button className="p-2 hover:bg-gray-100 rounded">
-              <div className="w-4 h-4 border border-gray-400">
-                <div className="w-full h-full border-l border-gray-400 rotate-45 origin-center"></div>
-              </div>
-            </button>
-          </div>
         </div>
       </div>
 
@@ -151,7 +130,7 @@ export default function IdeaList({
                   })()}
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-xs text-gray-500">아이디어 제작자</span>
+                  <span className="text-xs text-gray-500">Creator</span>
                   <div
                     className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium ${
                       idea.author === "나"
@@ -170,7 +149,7 @@ export default function IdeaList({
               <div className="space-y-3 pt-2">
                 <div>
                   <h4 className="text-xs font-semibold uppercase tracking-wider text-gray-400">
-                    아이디어(제목)
+                    Object
                   </h4>
                   <p className="text-sm font-medium text-gray-800 truncate mt-0.5">
                     {idea.content.object}
@@ -178,7 +157,7 @@ export default function IdeaList({
                 </div>
                 <div>
                   <h4 className="text-xs font-semibold uppercase tracking-wider text-gray-400 mt-2">
-                    기능 요약
+                    Function
                   </h4>
                   <p
                     className="text-sm text-gray-600 mt-0.5"
@@ -196,7 +175,7 @@ export default function IdeaList({
               </div>
 
               <button className="w-full mt-4 bg-gray-100 text-gray-700 py-2 px-3 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors">
-                자세히 보기
+                View Details
               </button>
             </div>
           );
@@ -209,31 +188,31 @@ export default function IdeaList({
               <>
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-3"></div>
                 <p className="text-sm font-medium">
-                  AI 에이전트들이 아이디어를 생성하고 있습니다...
+                  AI agents are generating ideas...
                 </p>
                 {generationProgress.total > 0 && (
                   <p className="text-xs text-blue-600 mt-1">
                     {generationProgress.completed}/{generationProgress.total}{" "}
-                    완료
+                    completed
                   </p>
                 )}
               </>
-            ) : ideas.length > 0 && authorFilter !== "전체" ? (
+            ) : ideas.length > 0 && authorFilter !== "All" ? (
               <>
                 <p className="text-sm">
-                  {authorFilter}가 작성한 아이디어가 없습니다
+                  No ideas found by {authorFilter}
                 </p>
                 <p className="text-xs text-gray-400 mt-1">
-                  다른 작성자를 선택하거나 전체 보기로 변경해보세요
+                  Try selecting a different author or switch to 'All'
                 </p>
               </>
             ) : (
               <>
-                <p className="text-sm">아직 생성된 아이디어가 없습니다</p>
+                <p className="text-sm">No ideas have been generated yet</p>
                 <p className="text-xs text-gray-400 mt-1">
                   {userCanGenerateIdeas
-                    ? "위의 '아이디어 추가하기' 버튼을 눌러 시작해보세요"
-                    : "아이디어 생성 담당자가 아이디어를 만들 때까지 기다려주세요"}
+                    ? "Click the 'Create New Idea' button above to get started"
+                    : "Please wait for the idea generation team member to create ideas"}
                 </p>
               </>
             )}
@@ -245,11 +224,11 @@ export default function IdeaList({
           <div className="text-center py-4 text-blue-600 bg-blue-50 rounded-lg">
             <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto mb-2"></div>
             <p className="text-sm font-medium">
-              추가 아이디어를 생성하고 있습니다...
+              Generating additional ideas...
             </p>
             {generationProgress.total > 0 && (
               <p className="text-xs text-blue-600 mt-1">
-                {generationProgress.completed}/{generationProgress.total} 완료
+                {generationProgress.completed}/{generationProgress.total} completed
               </p>
             )}
           </div>

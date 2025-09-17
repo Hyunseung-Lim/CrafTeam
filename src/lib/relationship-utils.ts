@@ -24,8 +24,13 @@ export function getRelationshipType(
   
   const normalizedFromId = getMemberActualId(fromMember);
   const normalizedToId = getMemberActualId(toMember);
-  
+
+  // Legacy support: handle both "나" and "Me" for user identification
+  const legacyNormalizedFromId = (normalizedFromId === "Me" || normalizedFromId === "나") ? ["Me", "나"] : [normalizedFromId];
+  const legacyNormalizedToId = (normalizedToId === "Me" || normalizedToId === "나") ? ["Me", "나"] : [normalizedToId];
+
   console.log(`🔍 정규화된 ID: ${normalizedFromId} → ${normalizedToId}`);
+  console.log(`🔍 레거시 호환 ID: [${legacyNormalizedFromId.join(", ")}] → [${legacyNormalizedToId.join(", ")}]`);
 
   // 자기 자신과의 관계는 없음
   if (normalizedFromId === normalizedToId) {
@@ -33,11 +38,12 @@ export function getRelationshipType(
     return null;
   }
 
-  // 직접 관계 찾기
+  // 직접 관계 찾기 (legacy support 포함)
   const directRelationship = team.relationships.find(
-    (rel) => rel.from === normalizedFromId && rel.to === normalizedToId
+    (rel) =>
+      legacyNormalizedFromId.includes(rel.from) && legacyNormalizedToId.includes(rel.to)
   );
-  
+
   console.log(`🔍 직접 관계:`, directRelationship || 'null');
 
   if (directRelationship) {
@@ -45,11 +51,12 @@ export function getRelationshipType(
     return directRelationship.type;
   }
 
-  // 역방향 관계 찾기 (상사-부하 관계의 경우)
+  // 역방향 관계 찾기 (상사-부하 관계의 경우, legacy support 포함)
   const reverseRelationship = team.relationships.find(
-    (rel) => rel.from === normalizedToId && rel.to === normalizedFromId
+    (rel) =>
+      legacyNormalizedToId.includes(rel.from) && legacyNormalizedFromId.includes(rel.to)
   );
-  
+
   console.log(`🔍 역방향 관계:`, reverseRelationship || 'null');
 
   if (reverseRelationship) {
@@ -95,8 +102,14 @@ export function canCreateFeedbackSession(
     return canCreate;
   }
 
-  // 명시적 관계가 없는 경우: 관계가 정의되지 않았으므로 피드백 불허용
-  console.log(`🔍 피드백 불가: 관계 없음`);
+  // 명시적 관계가 없는 경우: 사용자(Me)에게는 항상 피드백 가능, 다른 에이전트는 불허용
+  const toMember = findMemberById(team, toId);
+  if (toMember && toMember.isUser) {
+    console.log(`🔍 피드백 가능: 사용자에게는 항상 피드백 허용`);
+    return true;
+  }
+
+  console.log(`🔍 피드백 불가: 관계 없음 (에이전트 간)`);
   return false;
 }
 
@@ -138,8 +151,14 @@ export function canMakeRequest(
     return canRequest;
   }
 
-  // 명시적 관계가 없는 경우: 관계가 정의되지 않았으므로 요청 불허용
-  console.log(`🔍 요청 불가: 관계 없음`);
+  // 명시적 관계가 없는 경우: 사용자(Me)에게는 항상 요청 가능, 다른 에이전트는 불허용
+  const toMember = findMemberById(team, toId);
+  if (toMember && toMember.isUser) {
+    console.log(`🔍 요청 가능: 사용자에게는 항상 요청 허용`);
+    return true;
+  }
+
+  console.log(`🔍 요청 불가: 관계 없음 (에이전트 간)`);
   return false;
 }
 

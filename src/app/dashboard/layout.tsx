@@ -28,24 +28,9 @@ export default async function DashboardLayout({
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center">
               <Link href="/" className="text-xl font-bold text-gray-900">
-                AI 팀 빌더
+                CrafTeam
               </Link>
             </div>
-
-            <nav className="hidden md:flex space-x-8">
-              <Link
-                href="/dashboard/agents"
-                className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
-              >
-                에이전트 관리
-              </Link>
-              <Link
-                href="/dashboard/teams"
-                className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
-              >
-                팀 관리
-              </Link>
-            </nav>
 
             <div className="flex items-center space-x-4">
               <span className="text-sm text-gray-600">
@@ -54,7 +39,7 @@ export default async function DashboardLayout({
               <form action={signOutAction}>
                 <Button variant="ghost" size="sm" type="submit">
                   <LogOut className="h-4 w-4" />
-                  로그아웃
+                  Logout
                 </Button>
               </form>
             </div>

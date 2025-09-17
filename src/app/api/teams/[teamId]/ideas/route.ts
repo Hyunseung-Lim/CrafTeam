@@ -59,8 +59,8 @@ export async function POST(
       try {
         let agentProfile = null;
 
-        // 작성자가 "나"가 아닌 경우 에이전트 프로필 가져오기
-        if (author !== "나") {
+        // 작성자가 "Me"가 아닌 경우 에이전트 프로필 가져오기
+        if (author !== "Me") {
           agentProfile = await getAgentById(author);
         }
 
@@ -75,19 +75,19 @@ export async function POST(
         );
 
         const newIdea = await addIdea(teamId, {
-          author: author === "나" ? "나" : (author || session.user.email),
+          author: author === "Me" ? "Me" : (author || session.user.email),
           timestamp: new Date().toISOString(),
           content: {
-            object: (generatedContent as any).object || "생성된 아이디어",
-            function: (generatedContent as any).function || "기능 설명",
+            object: (generatedContent as any).object || "Generated Idea",
+            function: (generatedContent as any).function || "Function Description",
             behavior:
               typeof (generatedContent as any).behavior === "object"
                 ? JSON.stringify((generatedContent as any).behavior)
-                : (generatedContent as any).behavior || "동작 설명",
+                : (generatedContent as any).behavior || "Behavior Description",
             structure:
               typeof (generatedContent as any).structure === "object"
                 ? JSON.stringify((generatedContent as any).structure)
-                : (generatedContent as any).structure || "구조 설명",
+                : (generatedContent as any).structure || "Structure Description",
           },
           evaluations: [],
         });
@@ -97,17 +97,17 @@ export async function POST(
           sender: author || session.user.email,
           type: "system",
           payload: {
-            content: "새로운 아이디어를 생성했습니다.",
+            content: "Generated a new idea.",
           },
         });
 
         // v2 메모리 업데이트 - 아이디어 생성 이벤트 기록 (AI 에이전트만)
-        if (author && author !== "나") {
+        if (author && author !== "Me") {
           try {
             await triggerMemoryUpdate(
               author,
               "idea_evaluation", // 사용자 요청으로 아이디어 생성
-              `I generated a new idea: "${newIdea.content.object}" - ${newIdea.content.function}`,
+              `Generated a new idea: "${newIdea.content.object}" - ${newIdea.content.function}`,
               undefined,
               teamId
             );
@@ -128,7 +128,7 @@ export async function POST(
         console.error("AI 아이디어 생성 오류:", error);
         // 실패시 기본 아이디어로 대체
         const newIdea = await addIdea(teamId, {
-          author: author === "나" ? "나" : (author || session.user.email),
+          author: author === "Me" ? "Me" : (author || session.user.email),
           timestamp: new Date().toISOString(),
           content: {
             object: "AI 기반 환경 보호 솔루션",
@@ -143,12 +143,12 @@ export async function POST(
         });
 
         // v2 메모리 업데이트 - 기본 아이디어 생성 (AI 에이전트만)
-        if (author && author !== "나") {
+        if (author && author !== "Me") {
           try {
             await triggerMemoryUpdate(
               author,
               "idea_evaluation",
-              `I generated a new idea: "${newIdea.content.object}" - ${newIdea.content.function}`,
+              `Generated a new idea: "${newIdea.content.object}" - ${newIdea.content.function}`,
               undefined,
               teamId
             );
@@ -195,12 +195,12 @@ export async function POST(
       console.log("🔍 [사용자 아이디어 추가] 저장된 아이디어:", newIdea);
 
       // v2 메모리 업데이트 - 수동 아이디어 추가 (AI 에이전트만)
-      if (author && author !== "나") {
+      if (author && author !== "Me") {
         try {
           await triggerMemoryUpdate(
             author,
             "idea_evaluation",
-            `I generated a new idea: "${newIdea.content.object}" - ${newIdea.content.function}`,
+            `Generated a new idea: "${newIdea.content.object}" - ${newIdea.content.function}`,
             undefined,
             teamId
           );
@@ -230,7 +230,7 @@ export async function POST(
 
       // 아이디어 생성 역할을 가진 에이전트들 찾기
       const ideaGenerators = team.members.filter(
-        (member) => !member.isUser && member.roles.includes("아이디어 생성하기")
+        (member) => !member.isUser && member.roles.includes("Idea Generation")
       );
 
       if (ideaGenerators.length === 0) {
@@ -288,16 +288,16 @@ export async function POST(
             author: member.agentId,
             timestamp: new Date().toISOString(),
             content: {
-              object: (generatedContent as any).object || "생성된 아이디어",
-              function: (generatedContent as any).function || "기능 설명",
+              object: (generatedContent as any).object || "Generated Idea",
+              function: (generatedContent as any).function || "Function Description",
               behavior:
                 typeof (generatedContent as any).behavior === "object"
                   ? JSON.stringify((generatedContent as any).behavior)
-                  : (generatedContent as any).behavior || "동작 설명",
+                  : (generatedContent as any).behavior || "Behavior Description",
               structure:
                 typeof (generatedContent as any).structure === "object"
                   ? JSON.stringify((generatedContent as any).structure)
-                  : (generatedContent as any).structure || "구조 설명",
+                  : (generatedContent as any).structure || "Structure Description",
             },
             evaluations: [],
           });
@@ -310,7 +310,7 @@ export async function POST(
             sender: member.agentId,
             type: "system",
             payload: {
-              content: "새로운 아이디어를 생성했습니다.",
+              content: "Generated a new idea.",
             },
           });
 

@@ -145,11 +145,11 @@ export default function ChatArea({
 
   return (
     <div className="flex-1 flex flex-col bg-white">
-      {/* 채팅 헤더 */}
+      {/* Chat header */}
       <div className="border-b border-gray-200">
-        {/* 탭 목록 */}
+        {/* Tab list */}
         <div className="flex items-center bg-gray-50">
-          {/* 메인 채팅 탭 */}
+          {/* Main chat tab */}
           <button
             onClick={() => onSwitchTab("main")}
             className={`px-4 py-3 text-sm font-medium border-b-2 flex items-center gap-2 ${
@@ -158,10 +158,10 @@ export default function ChatArea({
                 : "text-gray-500 border-transparent hover:text-gray-700"
             }`}
           >
-            <MessageCircle className="h-4 w-4" />팀 대화
+            <MessageCircle className="h-4 w-4" />Team Chat
           </button>
 
-          {/* 피드백 탭들 */}
+          {/* Feedback tabs */}
           {feedbackTabs.map((tab) => (
             <button
               key={tab.id}
@@ -220,8 +220,8 @@ export default function ChatArea({
 
                   // "생성중입니다" 메시지만 필터링 (평가 관련 메시지는 모두 표시)
                   return (
-                    !contentText.includes("생성중입니다") &&
-                    !contentText.includes("생성하고 있습니다")
+                    !contentText.includes("generating") &&
+                    !contentText.includes("creating")
                   );
                 }
                 return true;
@@ -229,7 +229,7 @@ export default function ChatArea({
               .map((message, index) => {
                 // 메시지 발송자 이름 가져오기
                 const getSenderName = (senderId: string) => {
-                  if (senderId === "나") return "나";
+                  if (senderId === "Me") return "Me";
 
                   // 팀 멤버에서 해당 에이전트 찾기
                   const member = team?.members.find(
@@ -271,7 +271,7 @@ export default function ChatArea({
 
                   // AI끼리의 세션인지 확인 (사용자가 포함되지 않은 경우)
                   // participants는 이름 배열이므로 user 이름으로 비교
-                  const userName = team?.members?.find(m => m.isUser)?.userProfile?.name || "사용자";
+                  const userName = team?.members?.find(m => m.isUser)?.userProfile?.name || "User";
                   const isAIOnlySession = summaryPayload.participants?.every(
                     (participant: string) => participant !== userName
                   );
@@ -285,13 +285,13 @@ export default function ChatArea({
                     if (hasUserParticipant) {
                       // 사용자가 참여한 세션
                       if (summaryPayload.endedBy === "user") {
-                        return "피드백 세션을 종료했습니다.";
+                        return "Feedback session ended.";
                       } else {
-                        return "AI가 피드백 세션을 종료했습니다.";
+                        return "AI ended the feedback session.";
                       }
                     } else {
                       // AI끼리의 세션
-                      return "AI 피드백 세션이 완료되었습니다.";
+                      return "AI feedback session completed.";
                     }
                   };
 
@@ -308,8 +308,8 @@ export default function ChatArea({
                           </div>
                           <div>
                             <h4 className="text-slate-800">
-                              {summaryPayload.participants?.join(" ↔ ")} 피드백
-                              세션이 종료되었습니다
+                              {summaryPayload.participants?.join(" ↔ ")} Feedback
+                              Session ended
                             </h4>
                             <p className="text-xs text-slate-600 mt-1">
                               {getEndMessage()}
@@ -323,7 +323,7 @@ export default function ChatArea({
                           summaryPayload.sessionMessages.length > 0 ? (
                             <div>
                               <p className="text-sm text-gray-600 mb-3">
-                                대화 내용
+                                Conversation Content
                               </p>
                               <div className="bg-white rounded-lg p-3 space-y-2">
                                 {summaryPayload.sessionMessages.map(
@@ -345,7 +345,7 @@ export default function ChatArea({
                                     const getSenderDisplayName = (
                                       senderId: string
                                     ) => {
-                                      if (senderId === "나") return "나";
+                                      if (senderId === "Me") return "Me";
 
                                       // 에이전트 목록에서 실제 이름 찾기
                                       const agent = teamAgents.find(
@@ -362,7 +362,7 @@ export default function ChatArea({
                                     const safeSender = getSafeSender(sessionMsg);
                                     const senderDisplayName =
                                       getSenderDisplayName(safeSender);
-                                    const isFromUser = safeSender === "나";
+                                    const isFromUser = safeSender === "Me";
                                     
 
                                     // AI끼리의 세션인 경우 참가자별로 다른 스타일 적용
@@ -458,7 +458,7 @@ export default function ChatArea({
                           ) : (
                             <div>
                               <p className="text-sm text-gray-600 mb-1">
-                                대화 기록 없음
+                                No conversation record
                               </p>
                               <p className="text-xs text-gray-500">
                                 메시지가 전송되지 않았거나 로드 중입니다.
@@ -467,8 +467,8 @@ export default function ChatArea({
                           )}
 
                           <div className="flex items-center gap-4 text-xs text-gray-500 pt-2">
-                            <span>{summaryPayload.messageCount}개 메시지</span>
-                            <span>{summaryPayload.duration}분 소요</span>
+                            <span>{summaryPayload.messageCount} messages</span>
+                            <span>{summaryPayload.duration} minutes</span>
                             <span>{formatTimestamp(message.timestamp)}</span>
                           </div>
                         </div>
@@ -478,7 +478,7 @@ export default function ChatArea({
                 }
 
                 if (message.type === "system") {
-                  // 시스템 메시지 (아이디어 생성/평가 알림)
+                  // System message (idea generation/evaluation notification)
 
                   // content를 안전하게 문자열로 추출하는 헬퍼 함수
                   const getContentText = (payload: any): string => {
@@ -506,15 +506,15 @@ export default function ChatArea({
                       ? false
                       : (isSystemMessagePayload(message.payload) ||
                           isChatMessagePayload(message.payload)) &&
-                        contentText.includes("생성했습니다");
+                        contentText.includes("generated");
 
                   const isEvaluationCompletedMessage =
                     typeof message.payload === "string"
                       ? false
                       : (isSystemMessagePayload(message.payload) ||
                           isChatMessagePayload(message.payload)) &&
-                        (contentText.includes("평가했습니다") ||
-                          contentText.includes("평가를 완료했습니다"));
+                        (contentText.includes("evaluated") ||
+                          contentText.includes("completed evaluation"));
 
                   const messageContent = (() => {
                     if (typeof message.payload === "string") {
@@ -537,7 +537,7 @@ export default function ChatArea({
                       }
                       return JSON.stringify(message.payload.content);
                     }
-                    return "작업을 완료했습니다.";
+                    return "Task completed.";
                   })();
 
                   // 평가 완료 메시지는 다른 색상으로 표시
@@ -553,7 +553,7 @@ export default function ChatArea({
                         <span>
                           {(() => {
                             const currentSenderName = getSenderName(getSafeSender(message));
-                            return currentSenderName + getKoreanParticle(currentSenderName, "이", "가") + " " + messageContent;
+                            return currentSenderName + " " + messageContent;
                           })()}
                         </span>
                         {isIdeaCompletedMessage && (
@@ -615,7 +615,7 @@ export default function ChatArea({
                                 .sort((a, b) => a.timeDiff - b.timeDiff);
 
                               return (
-                                authorIdeas[0]?.content.object || "아이디어"
+                                authorIdeas[0]?.content.object || "idea"
                               );
                             })()}
                             "
@@ -707,7 +707,7 @@ export default function ChatArea({
                                 .sort((a, b) => a.timeDiff - b.timeDiff);
 
                               return (
-                                evaluatedIdeas[0]?.content.object || "아이디어"
+                                evaluatedIdeas[0]?.content.object || "idea"
                               );
                             })()}
                             "
@@ -720,7 +720,7 @@ export default function ChatArea({
 
                 // 일반 메시지
                 const safeSender = getSafeSender(message);
-                const isMyMessage = safeSender === "나";
+                const isMyMessage = safeSender === "Me";
 
                 return (
                   <div
@@ -758,7 +758,7 @@ export default function ChatArea({
                               if (isRequest) {
                                 // 나에게 온 요청인지 확인
                                 const userMember = team.members.find(m => m.isUser);
-                                const userName = userMember?.userProfile?.name || "나";
+                                const userName = userMember?.userProfile?.name || "Me";
                                 
                                 const isRequestToMe = message.payload && 
                                   typeof message.payload === "object" &&
@@ -809,7 +809,7 @@ export default function ChatArea({
                                 }
                                 return JSON.stringify(content);
                               }
-                              return "메시지 내용 없음";
+                              return "No message content";
                             })();
 
                             const isRequest =
@@ -825,12 +825,12 @@ export default function ChatArea({
                                 | "evaluate_idea";
                               const requestText =
                                 {
-                                  generate: "아이디어 생성",
-                                  generate_idea: "아이디어 생성",
-                                  evaluate: "아이디어 평가",
-                                  evaluate_idea: "아이디어 평가",
-                                  give_feedback: "피드백",
-                                }[reqType] || "작업";
+                                  generate: "idea generation",
+                                  generate_idea: "idea generation",
+                                  evaluate: "idea evaluation",
+                                  evaluate_idea: "idea evaluation",
+                                  give_feedback: "feedback",
+                                }[reqType] || "task";
 
                               return (
                                 <div>
@@ -844,7 +844,7 @@ export default function ChatArea({
                                     <span className="font-medium">
                                       @{getAuthorName(mention)}
                                     </span>
-                                    <span>에게 {requestText} 요청</span>
+                                    <span> requested {requestText} from </span>
                                   </div>
                                   <p
                                     className={`text-sm leading-relaxed ${
@@ -874,7 +874,7 @@ export default function ChatArea({
                                       <span className="font-medium">
                                         @{getAuthorName(mention)}
                                       </span>
-                                      <span>에게 피드백</span>
+                                      <span>feedback to</span>
                                     </div>
                                     <p
                                       className={`text-sm leading-relaxed ${
@@ -883,7 +883,7 @@ export default function ChatArea({
                                           : "text-gray-800"
                                       }`}
                                     >
-                                      {extractedContent || "메시지 내용 없음"}
+                                      {extractedContent || "No message content"}
                                     </p>
                                   </div>
                                 );
@@ -898,7 +898,7 @@ export default function ChatArea({
                                           : "text-gray-800"
                                       }`}
                                     >
-                                      {extractedContent || "메시지 내용 없음"}
+                                      {extractedContent || "No message content"}
                                     </p>
                                   </div>
                                 );
@@ -928,7 +928,7 @@ export default function ChatArea({
                               }
                               return JSON.stringify(message.payload.content);
                             }
-                            return "작업을 완료했습니다.";
+                            return "Task completed.";
                           })();
                           return (
                             <p
@@ -971,7 +971,7 @@ export default function ChatArea({
       {/* 메시지 입력 */}
       {activeTab === "main" && (
         <div className="p-3 sm:p-4 md:p-5 lg:p-6 border-t border-gray-200">
-          {/* 아이디어 생성 제한 알림 */}
+          {/* Idea generation limit notification */}
           {isChatDisabled() && (
             <div className="mb-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
               <div className="flex items-center gap-2">
@@ -997,7 +997,7 @@ export default function ChatArea({
               >
                 <span className="text-gray-500">@</span>
                 <span>
-                  {mentionedAgent ? mentionedAgent.name : "팀원 선택"}
+                  {mentionedAgent ? mentionedAgent.name : "Select Member"}
                 </span>
               </button>
               {showMentionDropdown && !isChatDisabled() && (
@@ -1044,12 +1044,12 @@ export default function ChatArea({
                         <span>{agent.name}</span>
                         {isInFeedback && (
                           <span className="text-xs text-orange-600 font-medium">
-                            피드백 중
+                            Giving Feedback
                           </span>
                         )}
                         {!isInFeedback && !hasRelationship && (
                           <span className="text-xs text-gray-500">
-                            관계 없음
+                            No relationship
                           </span>
                         )}
                         {!isInFeedback &&
@@ -1058,7 +1058,7 @@ export default function ChatArea({
                           requestType &&
                           !canAgentPerformRole(agent, requestType) && (
                             <span className="text-xs text-gray-500">
-                              역할 없음
+                              No role
                             </span>
                           )}
                       </button>
@@ -1079,15 +1079,15 @@ export default function ChatArea({
                   }).length === 0 && (
                     <div className="px-3 py-2 text-xs text-gray-500">
                       {chatMode === "make_request" && requestType
-                        ? "해당 역할을 수행할 수 있고 관계가 연결된 에이전트가 없거나 모두 피드백 중입니다."
-                        : "관계가 연결된 에이전트가 없거나 모두 피드백 세션 중입니다."}
+                        ? "No agents with the required role and relationships available, or all are in feedback sessions."
+                        : "No agents with relationships available, or all are in feedback sessions."}
                     </div>
                   )}
                 </div>
               )}
             </div>
 
-            <span className="text-sm text-gray-500">에게</span>
+            <span className="text-sm text-gray-500">to</span>
 
             <select
               value={chatMode}
@@ -1105,8 +1105,8 @@ export default function ChatArea({
                 isChatDisabled() ? "opacity-50 cursor-not-allowed" : ""
               }`}
             >
-              <option value="give_feedback">피드백</option>
-              <option value="make_request">요청</option>
+              <option value="give_feedback">Feedback</option>
+              <option value="make_request">Request</option>
             </select>
 
             {chatMode === "make_request" && (
@@ -1133,7 +1133,7 @@ export default function ChatArea({
                 }`}
               >
                 <option value="" disabled>
-                  요청 선택
+                  Select request
                 </option>
                 {getAvailableRequestTypes().map((type) => (
                   <option key={type.value} value={type.value}>
@@ -1154,14 +1154,12 @@ export default function ChatArea({
                 isChatDisabled()
                   ? getChatDisabledMessage()
                   : feedbackTabs.length > 0 && activeTab !== "main"
-                  ? "피드백 세션이 진행 중입니다. 메인 탭에서 채팅하세요."
+                  ? "Feedback session in progress. Please chat in the main tab."
                   : chatMode === "give_feedback"
-                  ? `${
-                      mentionedAgent ? mentionedAgent.name : "팀원"
-                    }에게 피드백을 보내세요...`
+                  ? "Send feedback to your team members..."
                   : `${
-                      mentionedAgent ? mentionedAgent.name : "팀원"
-                    }에게 요청할 내용을 입력하세요...`
+                      mentionedAgent ? mentionedAgent.name : "member"
+                    } to request...`
               }
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !e.shiftKey) {

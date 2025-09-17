@@ -29,8 +29,8 @@ export const formatTimestamp = (timestamp: string) => {
     (now.getTime() - messageTime.getTime()) / (1000 * 60)
   );
 
-  if (diffInMinutes < 1) return "방금 전";
-  if (diffInMinutes < 60) return `${diffInMinutes}분 전`;
-  if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)}시간 전`;
-  return `${Math.floor(diffInMinutes / 1440)}일 전`;
+  if (diffInMinutes < 1) return "just now";
+  if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
+  if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)}h ago`;
+  return `${Math.floor(diffInMinutes / 1440)}d ago`;
 };

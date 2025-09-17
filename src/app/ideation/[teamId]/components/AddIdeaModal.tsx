@@ -170,7 +170,7 @@ export default function AddIdeaModal({
           {/* 헤더 */}
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-xl font-bold text-gray-900">
-              새 아이디어 추가하기
+              Add New Idea
             </h2>
             <button
               onClick={onClose}
@@ -183,7 +183,7 @@ export default function AddIdeaModal({
           <div className="space-y-6">
             {/* Object 필드 */}
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">아이디어(제목)</label>
+              <label className="block text-sm font-medium text-gray-700">Object</label>
               <textarea
                 value={formData.object}
                 onChange={(e) => handleTextareaChange(e, (value) => onFormDataChange({ ...formData, object: value }))}
@@ -195,7 +195,7 @@ export default function AddIdeaModal({
 
             {/* Function 필드 */}
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">기능 요약</label>
+              <label className="block text-sm font-medium text-gray-700">Function</label>
               <textarea
                 value={formData.function}
                 onChange={(e) => handleTextareaChange(e, (value) => onFormDataChange({ ...formData, function: value }))}
@@ -208,13 +208,13 @@ export default function AddIdeaModal({
             {/* Behavior 필드 (Key-Value) */}
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <label className="block text-sm font-medium text-gray-700">핵심 동작(행동)</label>
+                <label className="block text-sm font-medium text-gray-700">Behavior</label>
                 <button
                   onClick={addBehaviorPair}
                   className="px-3 py-1 text-sm bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
                   type="button"
                 >
-                  + 행동 요소 추가
+                  + Add Behavior Element
                 </button>
               </div>
               
@@ -252,13 +252,13 @@ export default function AddIdeaModal({
             {/* Structure 필드 (Key-Value) */}
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <label className="block text-sm font-medium text-gray-700">구조</label>
+                <label className="block text-sm font-medium text-gray-700">Structure</label>
                 <button
                   onClick={addStructurePair}
                   className="px-3 py-1 text-sm bg-green-500 text-white rounded-md hover:bg-green-600 transition-colors"
                   type="button"
                 >
-                  + 구조 요소 추가
+                  + Add Structure Element
                 </button>
               </div>
               
@@ -330,13 +330,13 @@ export default function AddIdeaModal({
                 }
                 className="flex-1 bg-black text-white py-3 px-4 rounded-lg font-medium disabled:bg-gray-400 disabled:cursor-not-allowed hover:bg-gray-800 transition-colors"
               >
-                아이디어 추가하기
+                Add Idea
               </button>
               <button
                 onClick={onClose}
                 className="flex-1 bg-gray-500 text-white py-3 px-4 rounded-lg font-medium hover:bg-gray-600 transition-colors"
               >
-                취소
+                Cancel
               </button>
             </div>
           </div>

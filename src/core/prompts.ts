@@ -14,7 +14,7 @@ export const createAgentContextSections = (
     ? `
 **Your Identity & Professional Persona:**
 - Name: ${agentProfile.name}
-- Age: ${agentProfile.age}세
+- Age: ${agentProfile.age}
 - Gender: ${agentProfile.gender}
 - Nationality: ${agentProfile.nationality}
 - Education: ${agentProfile.education}
@@ -24,10 +24,7 @@ export const createAgentContextSections = (
 **You behave in the following manner:**
 ${personaSummary || `You are ${agentProfile.name}, bringing your unique combination of professional expertise, personality traits, and values to every interaction. Your ${agentProfile.professional} background shapes how you see problems and solutions. Let your authentic self drive your participation and collaboration with the team.`}
 
-${agentProfile.isLeader 
-  ? "As the team leader, take initiative, guide the team's ideation process, and use your persona summary to shape your leadership style and team interactions."
-  : (actionSpecificMessage || "Contribute to the team in ways that align with your persona summary and feel genuinely authentic to who you are.")
-}
+${actionSpecificMessage || "Contribute to the team in ways that align with your persona summary and feel genuinely authentic to who you are."}
 `
     : "";
 
@@ -38,13 +35,13 @@ ${agentProfile.isLeader
 ${(() => {
   let formattedMemory = "";
 
-  // v2 메모리 구조 확인
+  // Check v2 memory structure
   if (
     memory.longTerm?.knowledge ||
     memory.longTerm?.actionPlan ||
     memory.longTerm?.relation
   ) {
-    // v2 메모리 처리
+    // Process v2 memory
     if (memory.longTerm.knowledge) {
       formattedMemory += `- Knowledge: ${memory.longTerm.knowledge}\n`;
     }
@@ -107,7 +104,7 @@ ${(() => {
       }
     }
   } else {
-    // 기존 메모리 구조 처리
+    // Process legacy memory structure
     if (memory.longTerm?.self) {
       const selfReflection =
         typeof memory.longTerm.self === "string"
@@ -137,19 +134,19 @@ ${(() => {
     }
   }
 
-  // Recent Actions 처리 (최근 2개까지)
+  // Process Recent Actions (up to 2 recent ones)
   const recentActions = [];
   
   if (memory.shortTerm?.lastAction) {
     recentActions.push(memory.shortTerm.lastAction);
   }
   
-  // 추가 액션들이 있다면 배열에서 가져오기
+  // Get additional actions from array if available
   if (memory.shortTerm?.recentActions && Array.isArray(memory.shortTerm.recentActions)) {
     recentActions.push(...memory.shortTerm.recentActions);
   }
   
-  // 최신순으로 정렬하고 최근 2개만 선택
+  // Sort by newest and select only the most recent 2
   const sortedActions = recentActions
     .filter(action => action && action.type && action.timestamp)
     .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
@@ -262,12 +259,12 @@ Respond only in the following JSON format:
 }
 
 Example:
-Request Message: "I like idea #1, the '교육적 튜터링 스피커', but can we make it more focused on elderly care?"
+Request Message: "I like idea #1, the 'Educational Tutoring Speaker', but can we make it more focused on elderly care?"
 Existing Ideas: [
   { 
     "ideaNumber": 1, 
     "authorName": "Agent Jane", 
-    "object": "교육적 튜터링 스피커", 
+    "object": "Educational Tutoring Speaker", 
     "function": "..."
   }
 ]
@@ -275,7 +272,7 @@ Existing Ideas: [
 Your output:
 {
   "decision": "Update",
-  "referenceIdea": { "ideaNumber": 1, "object": "교육적 튜터링 스피커", "function": "..." },
+  "referenceIdea": { "ideaNumber": 1, "object": "Educational Tutoring Speaker", "function": "..." },
   "ideationStrategy": "Focus on elderly care features instead of general education."
 }
 
@@ -290,7 +287,7 @@ export const ideationPrompt = (
   memory?: any,
   personaSummary?: string
 ) => {
-  // 주제를 안전하게 처리하되 한글은 보존
+  // Handle topics safely while preserving the original language
   const safeContext = context || "Carbon Emission Reduction";
 
   const { profileContext, memoryContext } = createAgentContextSections(
@@ -330,44 +327,44 @@ Choose one of these thinking workflows:
 - Each solution must include more than 2 disruptive innovations compared to existing solutions
 - Challenge conventional approaches and leverage your professional expertise
 
-**Write all content in Korean.**
+**Write all content in English.**
 Respond only in the following JSON format:
 
 Examples (can be more specific than the example):
 Task: Design a smart speaker in the future.
 Idea: 
 {
-  "object": "교육적 튜터링 스피커",
-  "function": "모든 연령의 학생에게 인터랙티브한 교육을 제공하는 인공지능 어시스턴트",
+  "object": "Educational Tutoring Speaker",
+  "function": "An AI assistant that provides interactive education for students of all ages",
   "behavior": [
-    {"key": "인터랙티브 수업", "value": "다양한 주제와 학생의 수준에 맞는 음성 기반 교육 콘텐츠 제공"},
-    {"key": "과제 지원", "value": "학생들에게 적절한 설명과 답변을 제공하여 과제 수행을 지원"}
+    {"key": "Interactive Lessons", "value": "Provides voice-based educational content tailored to various topics and student levels"},
+    {"key": "Assignment Support", "value": "Assists students with their assignments by providing appropriate explanations and answers"}
   ],
   "structure": [
-    {"key": "적응형 교육 AI", "value": "사용자의 수준과 선호를 파악해 맞춤형 교육 콘텐츠를 생성"},
-    {"key": "고성능 오디오", "value": "효과적인 교육을 위한 고품질 오디오 출력을 지원"},
-    {"key": "다중 인식 마이크", "value": "여러 학생의 발화를 인식하기 위한 다중 마이크 배열"},
-    {"key": "부모용 컨트롤러", "value": "부모가 교육 콘텐츠를 모니터링하고 관리할 수 있도록 지원"}
+    {"key": "Adaptive Education AI", "value": "Identifies user level and preferences to generate personalized educational content"},
+    {"key": "High-Performance Audio", "value": "Supports high-quality audio output for effective education"},
+    {"key": "Multi-Recognition Microphone", "value": "Multi-microphone array to recognize speech from multiple students"},
+    {"key": "Parent Control Interface", "value": "Allows parents to monitor and manage educational content for their children"}
   ]
 }
 
 Task: Design a toy for cats.
 Idea:
 {
-  "object": "무소음 봉제 공",
-  "function": "고양이가 주인을 방해하지 않고 자유롭게 놀 수 있도록 무소음 놀이 경험을 제공합니다.",
+  "object": "Silent Plush Ball",
+  "function": "Provides silent play experience allowing cats to play freely without disturbing their owners.",
   "behavior": [
-    {"key": "컴팩트 디자인", "value": "좁은 공간에서도 고양이가 쉽게 물고, 밀고, 들고 다닐 수 있습니다."},
-    {"key": "부드럽고 높은 탄성", "value": "변형 후에도 빠르게 원형을 회복해 편안한 촉감을 제공합니다."},
-    {"key": "내구성과 저항성", "value": "잦은 물기·긁기·당기기에도 마모나 변형이 거의 없어 장기간 사용이 가능합니다."},
-    {"key": "무소음 반동", "value": "소리를 내지 않고 계속 튀며 움직여, 조용한 환경을 유지합니다."},
-    {"key": "안전성과 무독성", "value": "유해 화학물질이 없는 소재로 만들어, 고양이가 핥거나 물어도 안전합니다."}
+    {"key": "Compact Design", "value": "Cats can easily bite, push, and carry it even in narrow spaces."},
+    {"key": "Soft High Elasticity", "value": "Quickly recovers original shape after deformation, providing comfortable touch."},
+    {"key": "Durability and Resistance", "value": "Minimal wear or deformation despite frequent biting, scratching, and pulling, enabling long-term use."},
+    {"key": "Silent Bounce", "value": "Continues to bounce and move without making noise, maintaining a quiet environment."},
+    {"key": "Safety and Non-toxicity", "value": "Made from materials free of harmful chemicals, safe for cats to lick or bite."}
   ],
   "structure": [
-    {"key": "크기와 형태", "value": "지름 5 cm, 최대 4 cm까지 압축돼 실수로 삼키는 일을 방지합니다."},
-    {"key": "플러시 외피", "value": "부드럽고 편안하며 마모에 강하고 세척이 쉬워 위생적입니다."},
-    {"key": "고탄성 솜 충전재", "value": "적당한 부드러움과 구조적 안정성, 우수한 탄성을 제공합니다."},
-    {"key": "고강도 봉제 및 구조", "value": "격한 놀이에도 실밥이 풀리거나 끊어지지 않고 장기간 견딜 수 있습니다."}
+    {"key": "Size and Shape", "value": "5 cm diameter, compressible to 4 cm maximum to prevent accidental swallowing."},
+    {"key": "Plush Exterior", "value": "Soft and comfortable, durable against wear and easy to clean for hygiene."},
+    {"key": "High-Elasticity Cotton Filling", "value": "Provides appropriate softness, structural stability, and excellent elasticity."},
+    {"key": "High-Strength Stitching Structure", "value": "Withstands intense play without seams loosening or breaking, ensuring long-term durability."}
   ]
 }
 
@@ -384,8 +381,8 @@ Generate ideas using the following structure:
 ### Component Definitions:
 - **Object**: The target entity to be designed, which can be either existing or imagined. It is usually a noun or short phrases. Example: Residential house.
 - **Function**: Ultimate purposes the object must achieve, describing what the object should do. Example: Provide safety, provide comfort, provide load-bearing capacity.
-- **Behavior**: Dynamic characteristics of the object, including how it responds to various inputs and environmental conditions. It describes how the object achieves its functions, and is derived from or anticipated based on its structures. Format as an array of key-value pairs: [{"key": "행동 요소명", "value": "설명"}]
-- **Structure**: Physical composition or configuration of the object, including its components and the relationships between them. Format as an array of key-value pairs: [{"key": "구조 요소명", "value": "설명"}]
+- **Behavior**: Dynamic characteristics of the object, including how it responds to various inputs and environmental conditions. It describes how the object achieves its functions, and is derived from or anticipated based on its structures. Format as an array of key-value pairs: [{"key": "behavior element name", "value": "description"}]
+- **Structure**: Physical composition or configuration of the object, including its components and the relationships between them. Format as an array of key-value pairs: [{"key": "structure element name", "value": "description"}]
 
 Task: ${safeContext}`;
 };
@@ -401,7 +398,7 @@ const baseIdeationPromptText = `Generate one idea based on the provided instruct
 - function: The purpose or teleology of the object.
 - behavior: What the object does, expressed as a JSON object.
 - structure: The object's components and their relationships, as a JSON object.
-Write all content in Korean. Respond only in the following JSON format:`;
+Write all content in English. Respond only in the following JSON format:`;
 
 // New ideation prompt
 export const newIdeationPrompt = (
@@ -515,13 +512,13 @@ Respond only in the following JSON format:
 Example:
 Request Message: "Can you evaluate idea #2 focusing on its environmental benefits?"
 Available Ideas: [
-  { "ideaNumber": 1, "authorName": "User", "object": "스마트 조명", "function": "..." },
-  { "ideaNumber": 2, "authorName": "Agent A", "object": "태양광 충전기", "function": "..." }
+  { "ideaNumber": 1, "authorName": "User", "object": "Smart Lighting", "function": "..." },
+  { "ideaNumber": 2, "authorName": "Agent A", "object": "Solar Charger", "function": "..." }
 ]
 
 Your output:
 {
-  "selectedIdea": { "ideaNumber": 2, "object": "태양광 충전기", "function": "..." },
+  "selectedIdea": { "ideaNumber": 2, "object": "Solar Charger", "function": "..." },
   "evaluationStrategy": "Focus on environmental benefits and sustainability impact."
 }
 
@@ -574,7 +571,7 @@ Apply the evaluation strategy to focus your assessment on the specified aspects 
 
 Be specific and critical in your evaluation. Don't hesitate to point out weaknesses or limitations. Provide concrete reasons for your scores and specific suggestions for improvement.
 
-Provide your evaluation in the following JSON format. Write your comment in Korean.
+Provide your evaluation in the following JSON format. Write your comment in English.
 
 {
   "scores": {
@@ -582,7 +579,7 @@ Provide your evaluation in the following JSON format. Write your comment in Kore
     "completeness": <1-7>,
     "quality": <1-7>
   },
-  "comment": "Your detailed evaluation comment in Korean, focusing on the evaluation strategy while covering all three dimensions."
+  "comment": "Your detailed evaluation comment in English, focusing on the evaluation strategy while covering all three dimensions."
 }
 
 Respond only in the following JSON format:
@@ -615,9 +612,9 @@ export const preFeedbackPrompt = (
   
   const ideasText = targetMemberIdeas.length > 0 
     ? targetMemberIdeas.map((idea, index) => 
-        `${index + 1}. "${idea.content?.object || '제목 없음'}" - ${idea.content?.function || '설명 없음'}`
+        `${index + 1}. "${idea.content?.object || 'No Title'}" - ${idea.content?.function || 'No Description'}`
       ).join('\n')
-    : '아직 아이디어가 없습니다.';
+    : 'No ideas yet.';
     
   console.log(`📝 preFeedbackPrompt에서 생성된 ideasText:`, ideasText);
 
@@ -766,7 +763,7 @@ ${profileContext}${memoryContext}`;
     console.log(`- 길이:`, targetMemberIdeas?.length);
     
     const ideasText = targetMemberIdeas.map((idea, index) => 
-      `${index + 1}. "${idea.content?.object || '제목 없음'}" - ${idea.content?.function || '설명 없음'}`
+      `${index + 1}. "${idea.content?.object || 'No title'}" - ${idea.content?.function || 'No description'}`
     ).join('\n');
     
     console.log(`📝 feedbackPrompt에서 생성된 ideasText (hasIdeas=true):`, ideasText);
@@ -780,17 +777,17 @@ ${ideasText}`;
 - Focus on their specific ideas and provide constructive feedback
 - Reference specific details of their ideas
 - Suggest improvements, extensions, or alternative approaches
-- Use natural Korean language appropriate for your relationship level
+- Use natural English language appropriate for your relationship level
 - Balance positive recognition with constructive suggestions`;
     
   } else {
     // 아이디어가 없는 경우: 전체 팀 정보와 아이디어를 보여주고 역할 기반 피드백
     const allIdeasText = allIdeas && allIdeas.length > 0 
       ? allIdeas.map((idea, index) => {
-          // 작성자 ID를 이름으로 매핑
+          // Map author ID to name
           let authorName = idea.author;
-          if (idea.author === '나') {
-            authorName = '나';
+          if (idea.author === 'Me') {
+            authorName = 'Me';
           } else if (teamContext?.agentNameMap && teamContext.agentNameMap[idea.author]) {
             authorName = teamContext.agentNameMap[idea.author];
           } else if (teamContext?.teamMembers) {
@@ -798,56 +795,55 @@ ${ideasText}`;
               m.agentId === idea.author || m.userId === idea.author || m.name === idea.author
             );
             if (authorMember) {
-              authorName = authorMember.isUser ? '나' : (authorMember.name || authorMember.agentId || idea.author);
+              authorName = authorMember.isUser ? 'Me' : (authorMember.name || authorMember.agentId || idea.author);
             }
           }
-          return `${index + 1}. "${idea.content?.object || '제목 없음'}" (작성자: ${authorName}) - ${idea.content?.function || '설명 없음'}`;
+          return `${index + 1}. "${idea.content?.object || 'No Title'}" (Author: ${authorName}) - ${idea.content?.function || 'No Description'}`;
         }).join('\n')
-      : '팀에 아직 아이디어가 없습니다.';
+      : 'No ideas in the team yet.';
 
     // 팀 멤버 정보 생성 (이름, 역할, 관계)
     const teamMembersInfo = teamContext?.teamMembers?.map((member: any) => {
-      const roles = member.roles ? member.roles.join(', ') : '역할 없음';
-      const isLeader = member.isLeader ? ' (팀장)' : '';
-      let memberName = member.isUser ? '나' : '알 수 없음';
+      const roles = member.roles ? member.roles.join(', ') : 'No roles';
+      let memberName = member.isUser ? 'Me' : 'Unknown';
       if (!member.isUser) {
         if (teamContext?.agentNameMap && member.agentId && teamContext.agentNameMap[member.agentId]) {
           memberName = teamContext.agentNameMap[member.agentId];
         } else {
-          memberName = member.name || member.agentId || '알 수 없음';
+          memberName = member.name || member.agentId || 'Unknown';
         }
       }
-      return `- ${memberName}${isLeader}: ${roles}`;
-    }).join('\n') || '팀 멤버 정보 없음';
+      return `- ${memberName}: ${roles}`;
+    }).join('\n') || 'No team member information';
 
     // 관계 정보 생성
     const relationshipsInfo = teamContext?.relationships && teamContext.relationships.length > 0
       ? teamContext.relationships.map((rel: any) => {
-          let fromName = rel.from === '나' ? '나' : rel.from;
-          let toName = rel.to === '나' ? '나' : rel.to;
+          let fromName = rel.from === 'Me' ? 'Me' : rel.from;
+          let toName = rel.to === 'Me' ? 'Me' : rel.to;
           
           // agentNameMap을 사용해서 agent ID를 이름으로 변환
-          if (rel.from !== '나' && teamContext?.agentNameMap && teamContext.agentNameMap[rel.from]) {
+          if (rel.from !== 'Me' && teamContext?.agentNameMap && teamContext.agentNameMap[rel.from]) {
             fromName = teamContext.agentNameMap[rel.from];
-          } else if (rel.from !== '나' && teamContext?.teamMembers) {
+          } else if (rel.from !== 'Me' && teamContext?.teamMembers) {
             const fromMember = teamContext.teamMembers.find((m: any) => m.agentId === rel.from);
             if (fromMember) {
               fromName = fromMember.name || rel.from;
             }
           }
           
-          if (rel.to !== '나' && teamContext?.agentNameMap && teamContext.agentNameMap[rel.to]) {
+          if (rel.to !== 'Me' && teamContext?.agentNameMap && teamContext.agentNameMap[rel.to]) {
             toName = teamContext.agentNameMap[rel.to];
-          } else if (rel.to !== '나' && teamContext?.teamMembers) {
+          } else if (rel.to !== 'Me' && teamContext?.teamMembers) {
             const toMember = teamContext.teamMembers.find((m: any) => m.agentId === rel.to);
             if (toMember) {
               toName = toMember.name || rel.to;
             }
           }
-          const relType = rel.type === 'SUPERVISOR' ? '상사' : rel.type === 'SUBORDINATE' ? '부하' : rel.type === 'PEER' ? '동료' : rel.type;
+          const relType = rel.type === 'SUPERVISOR' ? 'Supervisor' : rel.type === 'SUBORDINATE' ? 'Subordinate' : rel.type === 'PEER' ? 'Peer' : rel.type;
           return `- ${fromName} → ${toName}: ${relType}`;
         }).join('\n')
-      : '설정된 관계 없음';
+      : 'No established relationships';
     
     contextSection = `**Team Member:** ${targetMember}
 **Their Assigned Roles:** ${targetMemberRoles?.join(', ') || 'No specific roles'}
@@ -866,16 +862,16 @@ ${relationshipsInfo}
 ${allIdeasText}`;
 
     feedbackGuidelines = `**Feedback Guidelines:**
-- **Focus on Role Excellence**: Discuss how they can maximize their assigned roles (${targetMemberRoles?.join(', ') || '역할 없음'}) to boost team ideation performance
+- **Focus on Role Excellence**: Discuss how they can maximize their assigned roles (${targetMemberRoles?.join(', ') || 'No roles'}) to boost team ideation performance
 - **Actionable Role Improvements**: Suggest specific, practical ways they can enhance their role execution for better team outcomes
 - **Team Performance Enhancement**: Connect their role improvements to overall team meeting effectiveness and ideation quality
 - Consider team relationships and dynamics when suggesting role improvements
-- If they have "아이디어 생성하기" role: suggest techniques, approaches, or collaboration methods to generate higher-quality ideas
-- If they have "아이디어 평가하기" role: recommend evaluation frameworks or criteria to provide more valuable assessments
-- If they have "피드백하기" role: propose feedback strategies that drive better team discussions and idea refinement
-- If they have "요청하기" role: suggest strategic request approaches that unlock team potential and facilitate better collaboration
+- If they have "Idea Generation" role: suggest techniques, approaches, or collaboration methods to generate higher-quality ideas
+- If they have "Idea Evaluation" role: recommend evaluation frameworks or criteria to provide more valuable assessments
+- If they have "Feedback" role: propose feedback strategies that drive better team discussions and idea refinement
+- If they have "Request" role: suggest strategic request approaches that unlock team potential and facilitate better collaboration
 - **Constructive & Executable**: Provide concrete, implementable suggestions they can use immediately in the current meeting
-- Use natural Korean language appropriate for your relationship level`;
+- Use natural English language appropriate for your relationship level`;
   }
 
   const mainPrompt = `Provide natural, conversational feedback to your team member based on the strategic approach below.
@@ -894,7 +890,7 @@ ${feedbackGuidelines}
 
 Provide your feedback in the following JSON format:
 {
-  "feedback": "Your natural, conversational feedback message in Korean"
+  "feedback": "Your natural, conversational feedback message in English"
 }`;
 
   return { agentContext, mainPrompt };
@@ -935,7 +931,7 @@ export const responsePrompt = (
   if (hasIdeas) {
     // 아이디어가 있는 경우: 개인 아이디어만 표시
     const ideasText = targetMemberIdeas.map((idea, index) => 
-      `${index + 1}. "${idea.content?.object || '제목 없음'}" - ${idea.content?.function || '설명 없음'}`
+      `${index + 1}. "${idea.content?.object || 'No title'}" - ${idea.content?.function || 'No description'}`
     ).join('\n');
     
     contextSection = `**Team Member:** ${targetMember}
@@ -946,10 +942,10 @@ ${ideasText}`;
     // 아이디어가 없는 경우: 팀 전체 정보 표시
     const allIdeasText = allIdeas && allIdeas.length > 0 
       ? allIdeas.map((idea, index) => {
-          // 작성자 ID를 이름으로 매핑
+          // Map author ID to name
           let authorName = idea.author;
-          if (idea.author === '나') {
-            authorName = '나';
+          if (idea.author === 'Me') {
+            authorName = 'Me';
           } else if (teamContext?.agentNameMap && teamContext.agentNameMap[idea.author]) {
             authorName = teamContext.agentNameMap[idea.author];
           } else if (teamContext?.teamMembers) {
@@ -957,56 +953,55 @@ ${ideasText}`;
               m.agentId === idea.author || m.userId === idea.author || m.name === idea.author
             );
             if (authorMember) {
-              authorName = authorMember.isUser ? '나' : (authorMember.name || authorMember.agentId || idea.author);
+              authorName = authorMember.isUser ? 'Me' : (authorMember.name || authorMember.agentId || idea.author);
             }
           }
-          return `${index + 1}. "${idea.content?.object || '제목 없음'}" (작성자: ${authorName}) - ${idea.content?.function || '설명 없음'}`;
+          return `${index + 1}. "${idea.content?.object || 'No Title'}" (Author: ${authorName}) - ${idea.content?.function || 'No Description'}`;
         }).join('\n')
-      : '팀에 아직 아이디어가 없습니다.';
+      : 'No ideas in the team yet.';
 
     // 팀 멤버 정보 생성
     const teamMembersInfo = teamContext?.teamMembers?.map((member: any) => {
-      const roles = member.roles ? member.roles.join(', ') : '역할 없음';
-      const isLeader = member.isLeader ? ' (팀장)' : '';
-      let memberName = member.isUser ? '나' : '알 수 없음';
+      const roles = member.roles ? member.roles.join(', ') : 'No roles';
+      let memberName = member.isUser ? 'Me' : 'Unknown';
       if (!member.isUser) {
         if (teamContext?.agentNameMap && member.agentId && teamContext.agentNameMap[member.agentId]) {
           memberName = teamContext.agentNameMap[member.agentId];
         } else {
-          memberName = member.name || member.agentId || '알 수 없음';
+          memberName = member.name || member.agentId || 'Unknown';
         }
       }
-      return `- ${memberName}${isLeader}: ${roles}`;
-    }).join('\n') || '팀 멤버 정보 없음';
+      return `- ${memberName}: ${roles}`;
+    }).join('\n') || 'No team member information';
 
     // 관계 정보 생성
     const relationshipsInfo = teamContext?.relationships && teamContext.relationships.length > 0
       ? teamContext.relationships.map((rel: any) => {
-          let fromName = rel.from === '나' ? '나' : rel.from;
-          let toName = rel.to === '나' ? '나' : rel.to;
+          let fromName = rel.from === 'Me' ? 'Me' : rel.from;
+          let toName = rel.to === 'Me' ? 'Me' : rel.to;
           
           // agentNameMap을 사용해서 agent ID를 이름으로 변환
-          if (rel.from !== '나' && teamContext?.agentNameMap && teamContext.agentNameMap[rel.from]) {
+          if (rel.from !== 'Me' && teamContext?.agentNameMap && teamContext.agentNameMap[rel.from]) {
             fromName = teamContext.agentNameMap[rel.from];
-          } else if (rel.from !== '나' && teamContext?.teamMembers) {
+          } else if (rel.from !== 'Me' && teamContext?.teamMembers) {
             const fromMember = teamContext.teamMembers.find((m: any) => m.agentId === rel.from);
             if (fromMember) {
               fromName = fromMember.name || rel.from;
             }
           }
           
-          if (rel.to !== '나' && teamContext?.agentNameMap && teamContext.agentNameMap[rel.to]) {
+          if (rel.to !== 'Me' && teamContext?.agentNameMap && teamContext.agentNameMap[rel.to]) {
             toName = teamContext.agentNameMap[rel.to];
-          } else if (rel.to !== '나' && teamContext?.teamMembers) {
+          } else if (rel.to !== 'Me' && teamContext?.teamMembers) {
             const toMember = teamContext.teamMembers.find((m: any) => m.agentId === rel.to);
             if (toMember) {
               toName = toMember.name || rel.to;
             }
           }
-          const relType = rel.type === 'SUPERVISOR' ? '상사' : rel.type === 'SUBORDINATE' ? '부하' : rel.type === 'PEER' ? '동료' : rel.type;
+          const relType = rel.type === 'SUPERVISOR' ? 'Supervisor' : rel.type === 'SUBORDINATE' ? 'Subordinate' : rel.type === 'PEER' ? 'Peer' : rel.type;
           return `- ${fromName} → ${toName}: ${relType}`;
         }).join('\n')
-      : '설정된 관계 없음';
+      : 'No established relationships';
     
     contextSection = `**Team Member:** ${targetMember}
 **Their Assigned Roles:** ${targetMemberRoles?.join(', ') || 'No specific roles'}
@@ -1033,7 +1028,7 @@ ${allIdeasText}`;
 ${contextSection}
 
 **Response Guidelines:**
-- Use appropriate Korean language level based on your relationship
+- Use appropriate English language level based on your relationship
 - Respond naturally and conversationally to the most recent message (not too formal)
 - Let your personality and speaking style show through clearly (casual/formal speech, unique speech patterns, personality traits)
 - Keep responses short and natural (1-3 sentences maximum)
@@ -1054,7 +1049,7 @@ ${historyText}
 
 Provide your response in the following JSON format:
 {
-  "response": "Your natural, conversational response in Korean",
+  "response": "Your natural, conversational response in English",
   "reasoning": "Brief explanation of your decision to continue or end",
   "shouldEnd": true
 }`;
@@ -1104,10 +1099,10 @@ export const preRequestPrompt = (
       if (member.isUser && member.userInfo) {
         const info = member.userInfo;
         const details = [];
-        if (info.age) details.push(`${info.age}세`);
-        if (info.professional) details.push(`직업: ${info.professional}`);
-        if (info.skills) details.push(`스킬: ${info.skills}`);
-        if (info.personality) details.push(`성격: ${info.personality}`);
+        if (info.age) details.push(`${info.age} years old`);
+        if (info.professional) details.push(`Profession: ${info.professional}`);
+        if (info.skills) details.push(`Skills: ${info.skills}`);
+        if (info.personality) details.push(`Personality: ${info.personality}`);
 
         if (details.length > 0) {
           memberDetails += `\n    → ${details.join(", ")}`;
@@ -1199,7 +1194,7 @@ export const requestPrompt = (
     ? {
         PEER: "As colleagues, communicate in a professional and collaborative tone.",
         SUPERVISOR:
-          "As this person's supervisor, communicate in a friendly yet guiding tone. Use informal speech as is appropriate for a superior addressing a subordinate in Korean workplace culture.",
+          "As this person's supervisor, communicate in a friendly yet guiding tone. Use professional but approachable language appropriate for a superior addressing a subordinate.",
         SUBORDINATE:
           "As this person's subordinate, use respectful language and maintain a formal tone.",
         NULL: "You have no established relationship with this person, so you cannot directly interact with them for feedback or requests.",
@@ -1264,11 +1259,11 @@ Based on the analysis, craft a natural and conversational message to delegate th
 - Be clear about what specific action you want them to take
 - Reference the original requester if appropriate
 
-Write in Korean using casual but respectful language.
+Write in English using casual but respectful language.
 
 Respond only in the following JSON format:
 {
-  "message": "Your delegation message to ${targetMember} in Korean"
+  "message": "Your delegation message to ${targetMember} in English"
 }`;
   } else {
     return `${profileContext}${memoryContext}You are making a request to ${targetMember} based on your strategic analysis.
@@ -1288,11 +1283,11 @@ Based on the analysis, craft a natural and conversational message to request ${r
 - Be clear about what specific action you want them to take
 - Consider their expertise and background when framing the request
 
-Write in Korean using casual but respectful language.
+Write in English using casual but respectful language.
 
 Respond only in the following JSON format:
 {
-  "message": "Your request message to ${targetMember} in Korean"
+  "message": "Your request message to ${targetMember} in English"
 }`;
   }
 };
@@ -1365,13 +1360,13 @@ export function planningPrompt(
       .length,
   };
 
-  // 가장 적게 수행된 액션들 찾기 (참고용)
+  // Find least performed actions (for reference)
   const minFrequency = Math.min(...Object.values(actionFrequency));
   const underperformedActions = Object.entries(actionFrequency)
     .filter(([, freq]) => freq === minFrequency)
     .map(([action]) => action);
 
-  // 본인의 최근 액션 패턴 분석
+  // Analyze own recent action patterns
   const myRecentActions = recentActions
     .filter((a) => a.author === agentProfile.name)
     .slice(-3)
@@ -1417,8 +1412,8 @@ ${teamContext.recentMessages
   .map((msg) => {
     // agent ID를 실제 이름으로 변환
     let senderName = msg.sender;
-    if (msg.sender === "나") {
-      senderName = "나";
+    if (msg.sender === "Me") {
+      senderName = "Me";
     } else if (teamContext?.agentNameMap && teamContext.agentNameMap[msg.sender]) {
       senderName = teamContext.agentNameMap[msg.sender];
     }
@@ -1432,14 +1427,14 @@ ${(() => {
   // 팀 관계 정보 생성 (responsePrompt와 동일한 로직)
   if (teamContext.relationships && teamContext.relationships.length > 0) {
     const relationshipsInfo = teamContext.relationships.map((rel: any) => {
-      let fromName = rel.from === '나' ? '나' : rel.from;
-      let toName = rel.to === '나' ? '나' : rel.to;
+      let fromName = rel.from === 'Me' ? 'Me' : rel.from;
+      let toName = rel.to === 'Me' ? 'Me' : rel.to;
       
       // agentNameMap을 사용해서 agent ID를 이름으로 변환
-      if (rel.from !== '나' && teamContext?.agentNameMap && teamContext.agentNameMap[rel.from]) {
+      if (rel.from !== 'Me' && teamContext?.agentNameMap && teamContext.agentNameMap[rel.from]) {
         fromName = teamContext.agentNameMap[rel.from];
       }
-      if (rel.to !== '나' && teamContext?.agentNameMap && teamContext.agentNameMap[rel.to]) {
+      if (rel.to !== 'Me' && teamContext?.agentNameMap && teamContext.agentNameMap[rel.to]) {
         toName = teamContext.agentNameMap[rel.to];
       }
       
@@ -1461,24 +1456,24 @@ ${relationshipsInfo}
 🎯 ACTION SELECTION GUIDANCE:
 **Role Constraints**: You may only perform actions within your assigned roles.
 **Team Balance**: ${balanceAnalysis}
-**Diversification**: Avoid repeating the same actions. Choose what feels natural for your personality and expertise while contributing in diverse ways.
+**Diversification**: Consider varying your contributions to maintain team dynamics.
 
 Available Actions (ONLY within your assigned roles):
 1. "generate_idea" - Generate new ideas for the topic ${
-    agentProfile.roles?.includes("아이디어 생성하기") ? "✅" : "❌"
+    agentProfile.roles?.includes("Idea Generation") ? "✅" : "❌"
   }
 2. "evaluate_idea" - Evaluate existing ideas (only when there are ideas to evaluate) ${
-    agentProfile.roles?.includes("아이디어 평가하기") ? "✅" : "❌"
+    agentProfile.roles?.includes("Idea Evaluation") ? "✅" : "❌"
   }
 3. "give_feedback" - Provide feedback to team members ${
-    agentProfile.roles?.includes("피드백하기") ? 
-      (teamContext.canGiveFeedback ? "✅ 사용 가능" : "⚪ 역할 있음") : 
-      "❌ 역할 없음"
+    agentProfile.roles?.includes("Feedback") ?
+      (teamContext.canGiveFeedback ? "✅ Available" : "⚪ Role assigned") :
+      "❌ No roles"
   }
 4. "make_request" - Request work from other team members ${
-    agentProfile.roles?.includes("요청하기") ? 
-      (teamContext.canMakeRequest ? "✅ 사용 가능" : "⚪ 역할 있음") : 
-      "❌ 역할 없음"
+    agentProfile.roles?.includes("Request") ?
+      (teamContext.canMakeRequest ? "✅ Available" : "⚪ Role assigned") :
+      "❌ No roles"
   }
 5. "wait" - Return to waiting state (always available)
 
@@ -1488,16 +1483,16 @@ Decision Considerations:
 ${teamContext.canGiveFeedback === false ? "📝 Note: Feedback requires established team relationships" : ""}
 ${teamContext.canMakeRequest === false ? "📝 Note: Requests work best with established team relationships" : ""}
 ${(() => {
-  const hasIdeation = agentProfile.roles?.includes("아이디어 생성하기");
-  const hasEvaluation = agentProfile.roles?.includes("아이디어 평가하기");
-  const hasRequest = agentProfile.roles?.includes("요청하기");
-  const hasFeedback = agentProfile.roles?.includes("피드백하기");
+  const hasIdeation = agentProfile.roles?.includes("Idea Generation");
+  const hasEvaluation = agentProfile.roles?.includes("Idea Evaluation");
+  const hasRequest = agentProfile.roles?.includes("Request");
+  const hasFeedback = agentProfile.roles?.includes("Feedback");
   const coreRoles = [];
-  
-  if (hasIdeation) coreRoles.push("아이디어 생성하기");
-  if (hasEvaluation) coreRoles.push("아이디어 평가하기");
-  if (hasRequest) coreRoles.push("요청하기");
-  if (hasFeedback) coreRoles.push("피드백하기");
+
+  if (hasIdeation) coreRoles.push("Idea Generation");
+  if (hasEvaluation) coreRoles.push("Idea Evaluation");
+  if (hasRequest) coreRoles.push("Request");
+  if (hasFeedback) coreRoles.push("Feedback");
   
   if (coreRoles.length > 0) {
     const contributions = [];
@@ -1544,19 +1539,19 @@ You are ${agentProfile.name}.
 
 **Your Information:**
 - Name: ${agentProfile.name}
-- Age: ${agentProfile.age}세
+- Age: ${agentProfile.age}
 - Gender: ${agentProfile.gender}
 - Professional Background: ${agentProfile.professional}
 - Skills: ${agentProfile.skills}
-- Personality: ${agentProfile.personality || "정보 없음"}
-- Values: ${agentProfile.value || "정보 없음"}
-- Work Style: ${agentProfile.workStyle || "협력적"}
+- Personality: ${agentProfile.personality || "No information"}
+- Values: ${agentProfile.value || "No information"}
+- Work Style: ${agentProfile.workStyle || "Collaborative"}
 
 **What Just Happened:**
 ${
   isAutonomous
-    ? `You autonomously planned and generated a new idea: "${idea.content.object}"`
-    : `You generated a new idea in response to a team member's request: "${idea.content.object}"`
+    ? `Autonomously planned and generated a new idea: "${idea.content.object}"`
+    : `Generated a new idea in response to a team member's request: "${idea.content.object}"`
 }
 
 **Team Context:**
@@ -1567,7 +1562,7 @@ ${
 ${
   typeof currentSelfReflection === "string" && currentSelfReflection.trim()
     ? currentSelfReflection
-    : "아직 특별한 성찰 내용이 없습니다."
+    : "No special reflection content yet."
 }
 
 Based on your experience of just generating an idea, please update your self-reflection. 
@@ -1575,7 +1570,7 @@ Build upon your existing reflection, but include what this new experience means 
 and any new insights you've gained about your personality or work style.
 
 **Response Format:**
-Write in a concise and natural style, within 200 Korean characters.
+Write in a concise and natural style, within 200 characters.
 `;
 
 export const createRelationOpinionPrompt = (
@@ -1615,7 +1610,7 @@ export const createDeepSelfReflectionPrompt = (
 You are an AI agent working in a team. Please update your self-reflection based on new experiences.
 
 Current Reflection:
-${currentReflection || "아직 특별한 성찰 내용이 없습니다."}
+${currentReflection || "No special reflection content yet."}
 
 New Experience:
 ${newExperience}
@@ -1630,7 +1625,7 @@ Based on the above content, please write your reflection following these guideli
 4. **Team-Oriented**: Think about relationships and collaboration with team members
 
 If you have existing reflection content, develop it further and integrate the new experience for a deeper, updated reflection.
-Please write in one paragraph of about 200-300 Korean characters.
+Please write in one paragraph of about 200-300 characters.
 `;
 
 export const createMemoryCompressionPrompt = (
@@ -1646,7 +1641,7 @@ ${oldInteractions.map((i) => `- ${i.action}: ${i.content}`).join("\n")}
 Please write each summary in the following format:
 {
   "action": "compressed_summary",
-  "content": "요약된 상호작용 내용",
+  "content": "Summarized interaction content",
   "timestamp": "${new Date().toISOString()}"
 }
 
@@ -1770,11 +1765,11 @@ Create a summary that captures:
 4. **Collaboration Patterns**: How participants interacted and collaborated
 5. **Action Items**: Any next steps or commitments made
 
-Write the summary in Korean and keep it concise but comprehensive.
+Write the summary in English and keep it concise but comprehensive.
 
 Respond in the following JSON format:
 {
-  "summary": "피드백 세션의 주요 내용, 제공된 피드백, 공유된 인사이트, 그리고 협업 패턴을 포함한 종합적인 요약"
+  "summary": "A comprehensive summary including the main content of the feedback session, provided feedback, shared insights, and collaboration patterns"
 }`
   };
 };
@@ -1789,17 +1784,17 @@ Rather than simply summarizing the persona, please infer how that persona might 
 
 ### 🧑‍💼 Agent Profile
 - **Name**: ${agentProfile.name}
-- **Age**: ${agentProfile.age}세
+- **Age**: ${agentProfile.age} years old
 - **Gender**: ${agentProfile.gender}
 - **Nationality**: ${agentProfile.nationality}
 - **Education / Major**: ${agentProfile.education} / ${agentProfile.major}
 - **Background**: ${agentProfile.professional}
 - **Skills**: ${agentProfile.skills}
-- **Personality**: ${agentProfile.personality || "정보 없음"}
-- **Values**: ${agentProfile.value || "정보 없음"}
-- **Work Style**: ${agentProfile.workStyle || "정보 없음"}
-- **Preferences**: ${agentProfile.preferences || "정보 없음"}
-- **Dislikes**: ${agentProfile.dislikes || "정보 없음"}
+- **Personality**: ${agentProfile.personality || "No information"}
+- **Values**: ${agentProfile.value || "No information"}
+- **Work Style**: ${agentProfile.workStyle || "No information"}
+- **Preferences**: ${agentProfile.preferences || "No information"}
+- **Dislikes**: ${agentProfile.dislikes || "No information"}
 
 ${sharedMentalModel ? `### 🤝 Shared Mental Model of the team
 ${sharedMentalModel}

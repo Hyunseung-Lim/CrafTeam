@@ -8,7 +8,7 @@ import {
 } from "@/lib/types";
 import { getMemberDisplayName } from "@/lib/member-utils";
 import { Button } from "@/components/ui/button";
-import { Plus, Crown, User, XIcon } from "lucide-react";
+import { Plus, User, XIcon } from "lucide-react";
 
 // RelationshipGraph 컴포넌트
 export function RelationshipGraph({
@@ -160,14 +160,14 @@ export function RelationshipGraph({
       {/* 사용법 안내 */}
       {!readOnly && (
         <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-          <h4 className="text-sm font-semibold text-blue-900 mb-2">📋 관계 설정 사용법</h4>
+          <h4 className="text-sm font-semibold text-blue-900 mb-2">📋 Relationship Setting Guide</h4>
           <div className="text-sm text-blue-800 space-y-1">
-            <p>• <strong>동료 관계:</strong> 서로 대등한 관계로 피드백과 요청이 가능합니다</p>
-            <p>• <strong>상사-부하 관계:</strong> 화살표가 가리키는 방향이 중요합니다</p>
+            <p>• <strong>Peer Relationship:</strong> A reciprocal relationship where feedback and requests are possible</p>
+            <p>• <strong>Superior-Subordinate Relationship:</strong> The direction of the arrow matters</p>
             <div className="ml-4 space-y-1 text-xs">
-              <p>→ 화살표가 가리키는 사람이 <span className="font-semibold text-blue-900">부하</span></p>
-              <p>→ 화살표 시작점이 <span className="font-semibold text-blue-900">상사</span></p>
-              <p>→ 예: A → B (A가 상사, B가 부하)</p>
+              <p>→ The person the arrow points to <span className="font-semibold text-blue-900">is the subordinate</span></p>
+              <p>→ The person where the arrow starts <span className="font-semibold text-blue-900">is the superior</span></p>
+              <p>→ Example: A → B (A is superior, B is subordinate)</p>
             </div>
           </div>
         </div>
@@ -179,50 +179,50 @@ export function RelationshipGraph({
             {!isConnecting && !connectionCandidate && (
               <Button variant="outline" onClick={startConnecting}>
                 <Plus className="h-4 w-4 mr-2" />
-                관계 연결하기
+                Connect Relationships
               </Button>
             )}
-          {(isConnecting || connectionCandidate) && (
+            {(isConnecting || connectionCandidate) && (
             <div className="flex items-center gap-2">
               <p className="text-sm text-blue-700 bg-blue-100 px-3 py-2 rounded-md">
                 {connectionCandidate
-                  ? "어떤 관계인가요?"
+                  ? "What type of relationship?"
                   : connectingFrom
                   ? `${(() => {
                       const member = members.find(
                         (m) => m.id === connectingFrom
                       );
-                      if (!member) return "알 수 없음";
+                      if (!member) return "Unknown";
                       return member.isUser
-                        ? "나"
+                        ? "Me"
                         : getMemberDisplayName(member, agents);
-                    })()}와 연결할 팀원을 선택하세요.`
-                  : "관계를 시작할 팀원을 선택하세요."}
+                    })()}, select a team member to connect.`
+                  : "Select a team member to start the relationship."}
               </p>
               <Button variant="ghost" size="sm" onClick={cancelConnecting}>
-                취소
+                Cancel
               </Button>
             </div>
-          )}
-        </div>
-
-        {connectionCandidate && (
-          <div className="flex gap-2">
-            {Object.entries(RELATIONSHIP_TYPES)
-              .filter(([, config]) => !config.hidden) // Filter out hidden relationships
-              .map(([type, config]) => (
-              <Button
-                key={type}
-                size="sm"
-                onClick={() => handleAddRelation(type as RelationshipType)}
-                variant="outline"
-                className="text-xs"
-              >
-                {config.label}
-              </Button>
-            ))}
+            )}
           </div>
-        )}
+
+          {connectionCandidate && (
+            <div className="flex gap-2">
+              {Object.entries(RELATIONSHIP_TYPES)
+                .filter(([, config]) => !config.hidden) // Filter out hidden relationships
+                .map(([type, config]) => (
+                <Button
+                  key={type}
+                  size="sm"
+                  onClick={() => handleAddRelation(type as RelationshipType)}
+                  variant="outline"
+                  className="text-xs"
+                >
+                  {config.label}
+                </Button>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
@@ -379,7 +379,7 @@ export function RelationshipGraph({
           />
         )}
 
-        {/* 팀원 노드들 */}
+        {/* Team member nodes */}
         {members.map((member) => {
           const node = nodes[member.id];
           if (!node) return null;
@@ -414,31 +414,23 @@ export function RelationshipGraph({
               <circle
                 r="28"
                 fill={
-                  member.isLeader
-                    ? "#f3f4f6" // gray-100
-                    : member.isUser
-                    ? "#e5e7eb" // gray-200
-                    : "white"
+                  member.isUser
+                    ? "#00C850" // green for users
+                    : "#2B7FFF" // blue for agents
                 }
                 strokeWidth="1.5"
                 stroke={
-                  member.isLeader
-                    ? "#4b5563" // gray-600
-                    : member.isUser
-                    ? "#6b7280" // gray-500
-                    : "#d1d5db" // gray-300
+                  member.isUser
+                    ? "#00C850" // green for users
+                    : "#2B7FFF" // blue for agents
                 }
               />
               <g pointerEvents="none" transform="translate(-12, -12)">
                 <foreignObject x="4" y="4" width="16" height="16">
-                  {member.isLeader ? (
-                    <Crown className="h-4 w-4 text-gray-800" />
-                  ) : member.isUser ? (
-                    <User className="h-4 w-4 text-gray-700" />
+                  {member.isUser ? (
+                    <User className="h-4 w-4 text-white" />
                   ) : (
-                    <span className="flex items-center justify-center h-full w-full font-bold text-gray-600 text-sm">
-                      {member.id}
-                    </span>
+                    <User className="h-4 w-4 text-white" />
                   )}
                 </foreignObject>
               </g>

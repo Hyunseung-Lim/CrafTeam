@@ -15,14 +15,14 @@ export async function PUT(
   try {
     const resolvedParams = await params;
     const teamId = resolvedParams.teamId;
-    const ideaId = parseInt(resolvedParams.ideaId);
+    const ideaId = resolvedParams.ideaId; // 이제 문자열 ID 사용
 
     console.log(`🔄 아이디어 업데이트 API 요청 - 팀ID: ${teamId}, 아이디어ID: ${ideaId}`);
 
-    if (isNaN(ideaId)) {
-      console.error(`❌ 유효하지 않은 아이디어 ID: ${resolvedParams.ideaId}`);
+    if (!ideaId) {
+      console.error(`❌ 아이디어 ID가 없습니다: ${resolvedParams.ideaId}`);
       return NextResponse.json(
-        { error: "유효하지 않은 아이디어 ID입니다." },
+        { error: "아이디어 ID가 필요합니다." },
         { status: 400 }
       );
     }
@@ -76,7 +76,7 @@ export async function PUT(
     }
 
     // 아이디어 업데이트 권한 확인
-    const hasUpdatePermission = userMember.roles.includes("아이디어 생성하기");
+    const hasUpdatePermission = userMember.roles.includes("Idea Generation");
     if (!hasUpdatePermission) {
       return NextResponse.json(
         { error: "아이디어 업데이트 권한이 없습니다." },
@@ -88,7 +88,7 @@ export async function PUT(
 
     // 업데이트된 아이디어를 새로운 아이디어로 추가
     const updatedIdea = await addIdea(teamId, {
-      author: "나", // 업데이트한 사용자가 새 아이디어의 작성자
+      author: "Me", // 업데이트한 사용자가 새 아이디어의 작성자
       timestamp: new Date().toISOString(),
       content: {
         object: content.object || "",
@@ -102,7 +102,7 @@ export async function PUT(
     console.log("✅ 아이디어 업데이트 성공:", updatedIdea.id);
 
     return NextResponse.json({
-      message: "기존 아이디어를 업데이트하여 새로운 아이디어를 생성했습니다.",
+      message: "Generated a new idea by updating an existing one.",
       idea: updatedIdea,
     });
 

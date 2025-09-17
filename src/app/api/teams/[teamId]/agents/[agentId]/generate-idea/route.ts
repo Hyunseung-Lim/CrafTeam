@@ -37,7 +37,7 @@ export async function POST(
     }
 
     // 에이전트가 아이디어 생성 역할을 가지고 있는지 확인
-    if (!teamMember.roles.includes("아이디어 생성하기")) {
+    if (!teamMember.roles.includes("Idea Generation")) {
       return NextResponse.json(
         {
           error: "Agent does not have idea generation role",
@@ -79,9 +79,9 @@ export async function POST(
       evaluations: [],
     });
 
-    console.log(`✅ 에이전트 ${agentId} 아이디어 생성 완료:`, savedIdea.id);
+    console.log(`✅ Agent ${agentId} idea generation completed:`, savedIdea.id);
 
-    // 메모리 업데이트 (생성된 아이디어 기록)
+    // Memory update (record generated idea)
     if (agentMemory && ideaResult.updatedMemory) {
       await updateAgentMemory(agentId, ideaResult.updatedMemory);
     }
@@ -89,10 +89,10 @@ export async function POST(
     return NextResponse.json({
       success: true,
       idea: savedIdea,
-      message: `아이디어가 성공적으로 생성되었습니다.`,
+      message: "Idea was successfully generated.",
     });
   } catch (error) {
-    console.error("아이디어 생성 API 오류:", error);
+    console.error("Idea generation API error:", error);
     return NextResponse.json(
       {
         error: "Internal server error",

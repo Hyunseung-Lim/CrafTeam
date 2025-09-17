@@ -52,7 +52,7 @@ export default function IdeationPage() {
   const [currentIdeaIndex, setCurrentIdeaIndex] = useState(0);
   const [ideas, setIdeas] = useState<Idea[]>([]);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [authorFilter, setAuthorFilter] = useState<string>("전체");
+  const [authorFilter, setAuthorFilter] = useState<string>("All");
   const [sortBy, setSortBy] = useState<"latest" | "rating">("latest");
   const [isGeneratingIdea, setIsGeneratingIdea] = useState(false);
   const [showAddIdeaModal, setShowAddIdeaModal] = useState(false);
@@ -146,18 +146,18 @@ export default function IdeationPage() {
   // 사용자 권한 확인
   const userMember = team?.members.find((member) => member.isUser);
   const userRoles = userMember?.roles || [];
-  const userCanGenerateIdeas = userRoles.includes("아이디어 생성하기");
+  const userCanGenerateIdeas = userRoles.includes("Idea Generation");
 
   // 작성자 이름 가져오기 함수
   const getAuthorName = (authorId: string) => {
-    if (authorId === "나") {
+    if (authorId === "Me") {
       const userMember = team?.members.find((m) => m.isUser);
-      return userMember?.userProfile?.name || "나";
+      return userMember?.userProfile?.name || "Me";
     }
     const member = team?.members.find((m) => m.agentId === authorId);
     if (member && !member.isUser) {
       const agent = agents.find((a) => a.id === authorId);
-      return agent?.name || `에이전트 ${authorId}`;
+      return agent?.name || `Agent ${authorId}`;
     }
     return authorId;
   };
@@ -168,9 +168,9 @@ export default function IdeationPage() {
     requestType: string
   ): boolean => {
     const roleMap = {
-      generate: "아이디어 생성하기" as AgentRole,
-      evaluate: "아이디어 평가하기" as AgentRole,
-      give_feedback: "피드백하기" as AgentRole,
+      generate: "Idea Generation" as AgentRole,
+      evaluate: "Idea Evaluation" as AgentRole,
+      give_feedback: "Feedback" as AgentRole,
     };
     const requiredRole = roleMap[requestType as keyof typeof roleMap];
     if (!requiredRole || !team) return false;
@@ -182,7 +182,7 @@ export default function IdeationPage() {
 
   // 에이전트가 피드백 세션 중인지 확인하는 함수 (인간 포함)
   const isAgentInFeedbackSession = (agentId: string): boolean => {
-    if (agentId === "나") {
+    if (agentId === "Me") {
       // 인간 사용자의 경우
       return userState?.currentState === "feedback_session";
     } else {
@@ -193,7 +193,18 @@ export default function IdeationPage() {
   };
 
   // 아이디어 필터링 (생성 순서용)
-  const ideasSortedByCreation = [...ideas].sort((a, b) => a.id - b.id);
+  const ideasSortedByCreation = [...ideas].sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+
+  // Debug: Check for duplicate IDs
+  console.log('🔍 All idea IDs:', ideas.map(idea => ({ id: idea.id, type: typeof idea.id })));
+  const idCounts = ideas.reduce((acc, idea) => {
+    acc[idea.id] = (acc[idea.id] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+  const duplicateIds = Object.entries(idCounts).filter(([id, count]) => count > 1);
+  if (duplicateIds.length > 0) {
+    console.error('❌ Duplicate idea IDs found:', duplicateIds);
+  }
 
   // 평가 평균 점수 계산 함수
   const calculateAverageRating = (idea: Idea): number | null => {
@@ -212,7 +223,7 @@ export default function IdeationPage() {
   // 정렬된 아이디어 목록
   const getSortedIdeas = () => {
     const filtered = ideas.filter((idea) => {
-      if (authorFilter === "전체") return true;
+      if (authorFilter === "All") return true;
       const authorName = getAuthorName(idea.author);
       return authorName === authorFilter;
     });
@@ -223,14 +234,14 @@ export default function IdeationPage() {
         const avgB = calculateAverageRating(b);
         
         // 평가가 없는 아이디어는 가장 아래로
-        if (avgA === null && avgB === null) return b.id - a.id; // 최신순으로
+        if (avgA === null && avgB === null) return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(); // 최신순으로
         if (avgA === null) return 1;
         if (avgB === null) return -1;
         
         return avgB - avgA; // 높은 점수순
       });
     } else {
-      return filtered.sort((a, b) => b.id - a.id); // 최신순
+      return filtered.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()); // 최신순
     }
   };
 
@@ -238,7 +249,7 @@ export default function IdeationPage() {
 
   // 고유한 작성자 목록
   const uniqueAuthors = [
-    "전체",
+    "All",
     ...Array.from(new Set(ideas.map((idea) => getAuthorName(idea.author)))),
   ];
 
@@ -261,8 +272,8 @@ export default function IdeationPage() {
       // Check if user has a non-NULL relationship with this agent
       if (team && team.relationships) {
         const relationship = team.relationships.find(rel => 
-          (rel.from === "나" && (rel.to === agent.id || rel.to === agent.name || rel.to === `${agent.name}봇`)) ||
-          (rel.to === "나" && (rel.from === agent.id || rel.from === agent.name || rel.from === `${agent.name}봇`))
+          (rel.from === "Me" && (rel.to === agent.id || rel.to === agent.name || rel.to === `${agent.name}봇`)) ||
+          (rel.to === "Me" && (rel.from === agent.id || rel.from === agent.name || rel.from === `${agent.name}봇`))
         );
         
         // If no relationship exists or relationship is NULL, prevent direct interaction
@@ -279,20 +290,20 @@ export default function IdeationPage() {
   const getAvailableRequestTypes = () => {
     if (!mentionedAgent) {
       return [
-        { value: "generate", label: "아이디어 생성" },
-        { value: "evaluate", label: "아이디어 평가" },
-        { value: "give_feedback", label: "피드백" },
+        { value: "generate", label: "Idea Generation" },
+        { value: "evaluate", label: "Idea Evaluation" },
+        { value: "give_feedback", label: "Feedback" },
       ];
     }
     const availableTypes = [];
     if (canAgentPerformRole(mentionedAgent, "generate")) {
-      availableTypes.push({ value: "generate", label: "아이디어 생성" });
+      availableTypes.push({ value: "generate", label: "Idea Generation" });
     }
     if (canAgentPerformRole(mentionedAgent, "evaluate")) {
-      availableTypes.push({ value: "evaluate", label: "아이디어 평가" });
+      availableTypes.push({ value: "evaluate", label: "Idea Evaluation" });
     }
     if (canAgentPerformRole(mentionedAgent, "give_feedback")) {
-      availableTypes.push({ value: "give_feedback", label: "피드백" });
+      availableTypes.push({ value: "give_feedback", label: "Feedback" });
     }
     return availableTypes;
   };
@@ -363,7 +374,7 @@ export default function IdeationPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           action: "create",
-          initiatorId: "나",
+          initiatorId: "Me",
           targetAgentId: participantId,
           message: sessionData?.message,
           feedbackContext: {
@@ -379,16 +390,16 @@ export default function IdeationPage() {
           let alertMessage = "";
           if (errorData.reason === "initiator_busy") {
             alertMessage =
-              "현재 다른 피드백 세션에 참여 중입니다. 기존 세션을 종료한 후 다시 시도해주세요.";
+              "Currently participating in another feedback session. Please end the existing session and try again.";
           } else if (errorData.reason === "target_busy") {
-            alertMessage = `${participantName}는 현재 다른 피드백 세션에 참여 중입니다. 잠시 후 다시 시도해주세요.`;
+            alertMessage = `${participantName} is currently participating in another feedback session. Please try again later.`;
           } else {
-            alertMessage = `${participantName}는 현재 다른 피드백 세션에 참여 중입니다. 잠시 후 다시 시도해주세요.`;
+            alertMessage = `${participantName} is currently participating in another feedback session. Please try again later.`;
           }
           alert(alertMessage);
           return null;
         }
-        throw new Error(`피드백 세션 생성 실패: ${response.status}`);
+        throw new Error(`Failed to create feedback session: ${response.status}`);
       }
 
       const result = await response.json();
@@ -411,7 +422,7 @@ export default function IdeationPage() {
       return tabId;
     } catch (error) {
       console.error("❌ 피드백 세션 생성 실패:", error);
-      alert("피드백 세션 생성에 실패했습니다. 다시 시도해주세요.");
+      alert("Failed to create feedback session. Please try again.");
       return null;
     } finally {
       setIsCreatingFeedbackSession(false);
@@ -448,16 +459,16 @@ export default function IdeationPage() {
     if (!newMessage.trim() || !team || !mentionedAgent) return;
 
     // 🔒 사용자가 피드백 세션 중인지 확인
-    if (isAgentInFeedbackSession("나")) {
+    if (isAgentInFeedbackSession("Me")) {
       alert(
-        "현재 피드백 세션에 참여 중입니다. 피드백 세션을 종료한 후 다시 시도해주세요."
+        "Currently participating in a feedback session. Please end the feedback session and try again."
       );
       return;
     }
 
     if (isAgentInFeedbackSession(mentionedAgent.id)) {
       alert(
-        `${mentionedAgent.name}는 현재 다른 피드백 세션에 참여 중입니다. 잠시 후 다시 시도해주세요.`
+        `${mentionedAgent.name} is currently participating in another feedback session. Please try again later.`
       );
       return;
     }
@@ -493,7 +504,7 @@ export default function IdeationPage() {
     // 낙관적 업데이트
     const tempMessage = {
       id: `temp-${Date.now()}`,
-      sender: "나",
+      sender: "Me",
       timestamp: new Date().toISOString(),
       type: chatMode,
       payload: {
@@ -515,11 +526,11 @@ export default function IdeationPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          sender: "나",
+          sender: "Me",
           payload: tempMessage.payload,
         }),
       });
-      if (!response.ok) throw new Error("서버 전송 실패");
+      if (!response.ok) throw new Error("Server transmission failed");
     } catch (error) {
       console.error("❌ 메시지 전송 실패:", error);
       setMessages((prevMessages) =>
@@ -538,7 +549,7 @@ export default function IdeationPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           action: "generate",
-          author: "나",
+          author: "Me",
         }),
       });
       if (response.ok) {
@@ -557,7 +568,7 @@ export default function IdeationPage() {
     try {
       console.log("🚀 아이디어 추가 요청:", {
         action: "add",
-        author: "나",
+        author: "Me",
         content: addIdeaFormData,
       });
 
@@ -566,7 +577,7 @@ export default function IdeationPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           action: "add",
-          author: "나",
+          author: "Me",
           content: addIdeaFormData,
         }),
       });
@@ -587,7 +598,7 @@ export default function IdeationPage() {
 
   // 에이전트 상태 초기화 핸들러
   const handleResetAgentStates = async () => {
-    if (confirm("모든 에이전트 상태를 초기화하시겠습니까?")) {
+    if (confirm("Are you sure you want to reset all agent states?")) {
       try {
         const response = await fetch(`/api/teams/${team?.id}/agent-states`, {
           method: "POST",
@@ -609,7 +620,7 @@ export default function IdeationPage() {
         }
       } catch (error) {
         console.error("에이전트 상태 초기화 실패:", error);
-        alert("초기화 중 오류가 발생했습니다.");
+        alert("An error occurred during reset.");
       }
     }
   };
@@ -654,7 +665,7 @@ export default function IdeationPage() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            evaluator: "나",
+            evaluator: "Me",
             scores: {
               novelty: evaluationData.novelty,
               completeness: evaluationData.completeness,
@@ -682,7 +693,7 @@ export default function IdeationPage() {
         return { success: true };
       } else {
         const errorData = await response.json();
-        throw new Error(errorData.error || "평가 제출에 실패했습니다.");
+        throw new Error(errorData.error || "Failed to submit evaluation.");
       }
     } catch (error) {
       console.error("아이디어 평가 실패:", error);
@@ -718,12 +729,12 @@ export default function IdeationPage() {
           setTopic(teamData.topic);
         } else {
           setError(
-            "이 팀에는 아이디에이션 주제가 설정되지 않았습니다. 팀을 다시 생성해주세요."
+            "This team has no ideation topic set. Please create the team again."
           );
           return;
         }
       } catch (error) {
-        setError("팀 정보를 불러올 수 없습니다.");
+        setError("Unable to load team information.");
       } finally {
         setLoading(false);
       }
@@ -740,7 +751,7 @@ export default function IdeationPage() {
     const triggerInitialIdeaGeneration = async () => {
       // '아이디어 생성하기' 역할을 가진 AI 에이전트들 찾기
       const ideaGenerators = team.members.filter(
-        (member) => !member.isUser && member.roles.includes("아이디어 생성하기")
+        (member) => !member.isUser && member.roles.includes("Idea Generation")
       );
 
       if (ideaGenerators.length === 0) {
@@ -820,7 +831,7 @@ export default function IdeationPage() {
 
             // 사용자가 참여자인지 확인
             const userParticipant = session.participants.find(
-              (p: any) => p.id === "나"
+              (p: any) => p.id === "Me"
             );
             if (!userParticipant) continue;
 
@@ -864,7 +875,7 @@ export default function IdeationPage() {
                     sender: "system",
                     type: "give_feedback",
                     payload: {
-                      content: `${otherParticipant.name}가 피드백을 요청했습니다. 피드백 탭이 자동으로 열렸습니다.`,
+                      content: `${otherParticipant.name} requested feedback. The feedback tab opened automatically.`,
                     },
                   }),
                 });
@@ -949,7 +960,7 @@ export default function IdeationPage() {
 
     // 아이디어 생성 역할을 가진 팀원들 (에이전트만)
     const ideaGenerators = team.members.filter(
-      (member) => !member.isUser && member.roles.includes("아이디어 생성하기")
+      (member) => !member.isUser && member.roles.includes("Idea Generation")
     );
 
     if (ideaGenerators.length === 0) return true; // 아이디어 생성자가 없으면 제한 없음
@@ -977,7 +988,7 @@ export default function IdeationPage() {
           .filter(
             (member) =>
               !member.isUser &&
-              member.roles.includes("아이디어 생성하기") &&
+              member.roles.includes("Idea Generation") &&
               !ideas.some((idea) => idea.author === member.agentId)
           )
           .map((member) => {
@@ -986,12 +997,12 @@ export default function IdeationPage() {
           }) || [];
 
       if (incompleteGenerators.length > 0) {
-        return `아이디어 생성 단계입니다. ${incompleteGenerators.join(
+        return `Idea generation in progress. Chat is restricted until ${incompleteGenerators.join(
           ", "
-        )}이(가) 아이디어를 생성할 때까지 채팅이 제한됩니다.`;
+        )} complete${incompleteGenerators.length > 1 ? "" : "s"} generating ideas.`;
       }
     }
-    return "채팅을 입력하세요...";
+    return "Enter your message...";
   };
 
   if (loading) {
@@ -999,7 +1010,7 @@ export default function IdeationPage() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">팀 정보를 불러오는 중...</p>
+          <p className="text-gray-600">Loading team information...</p>
         </div>
       </div>
     );

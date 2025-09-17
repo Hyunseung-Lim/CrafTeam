@@ -193,7 +193,7 @@ export async function getUserAgents(userId: string): Promise<AIAgent[]> {
   return agents.filter((agent): agent is AIAgent => agent !== null);
 }
 
-// 에이전트 페르소나 요약 업데이트
+// Update agent persona summary
 export async function updateAgentPersonaSummary(
   agentId: string, 
   personaSummary: string
@@ -257,15 +257,15 @@ export async function createTeam(
             
             // Update agent with persona summary
             await updateAgentPersonaSummary(member.agentId, personaSummary);
-            console.log(`🤖 ${agentProfile.name} 페르소나 요약 생성 완료:`, personaSummary.substring(0, 100) + "...");
+            console.log(`🤖 ${agentProfile.name} persona summary generation complete:`, personaSummary.substring(0, 100) + "...");
           }
         } catch (error) {
-          console.warn("에이전트 페르소나 요약 생성 실패:", member.agentId, error);
+          console.warn("Agent persona summary generation failed:", member.agentId, error);
         }
       }
     }
   } catch (error) {
-    console.error("페르소나 요약 생성 실패:", error);
+    console.error("Persona summary generation failed:", error);
   }
 
   const newTeam = {
@@ -541,39 +541,58 @@ export async function deleteTeam(
 
 export async function getIdeas(teamId: string): Promise<Idea[]> {
   const ideasJson = await redis.lrange(keys.ideas(teamId), 0, -1);
-  return ideasJson
+  const processedIdeas = ideasJson
     .map((idea: string | object) => {
       try {
+        let ideaObj: any;
+
         // Redis가 이미 파싱된 객체를 반환하는 경우
         if (typeof idea === "object" && idea !== null) {
           // 유효한 Idea 객체인지 확인
-          const ideaObj = idea as any;
-          if (ideaObj.id && ideaObj.author && ideaObj.content) {
-            return ideaObj as Idea;
-          } else {
+          ideaObj = idea as any;
+          if (!ideaObj.id || !ideaObj.author || !ideaObj.content) {
             console.warn("유효하지 않은 아이디어 객체:", idea);
             return null;
           }
-        }
-
-        // 문자열인 경우 파싱
-        if (typeof idea === "string") {
+        } else if (typeof idea === "string") {
           // "[object Object]" 형태의 손상된 데이터 체크
           if (idea === "[object Object]" || !idea) {
             console.warn("손상된 아이디어 데이터 스킵:", idea);
             return null;
           }
-          return JSON.parse(idea);
+          ideaObj = JSON.parse(idea);
+        } else {
+          console.warn("알 수 없는 타입의 아이디어 데이터:", typeof idea, idea);
+          return null;
         }
 
-        console.warn("알 수 없는 타입의 아이디어 데이터:", typeof idea, idea);
-        return null;
+        // Legacy ID migration: Convert numeric IDs to string with prefix
+        if (typeof ideaObj.id === 'number') {
+          ideaObj.id = `legacy_${ideaObj.id}_${nanoid(6)}`;
+          console.log(`🔄 Migrated legacy ID to: ${ideaObj.id}`);
+        }
+
+        return ideaObj as Idea;
       } catch (error) {
         console.warn("아이디어 처리 실패:", idea, error);
         return null;
       }
     })
     .filter((idea): idea is Idea => idea !== null);
+
+  // Check for any remaining duplicate IDs and resolve them
+  const seenIds = new Set<string>();
+  const uniqueIdeas = processedIdeas.map(idea => {
+    if (seenIds.has(idea.id)) {
+      const newId = `${idea.id}_dup_${nanoid(6)}`;
+      console.warn(`⚠️ Duplicate ID detected: ${idea.id}, changed to: ${newId}`);
+      return { ...idea, id: newId };
+    }
+    seenIds.add(idea.id);
+    return idea;
+  });
+
+  return uniqueIdeas;
 }
 
 export async function addIdea(
@@ -582,34 +601,34 @@ export async function addIdea(
 ): Promise<Idea> {
   console.log("아이디어 추가 시작:", { teamId, idea });
 
-  // ID 생성
-  const id = await redis.incr(keys.ideaCounter(teamId));
+  // ID 생성 - nanoid 사용하여 고유성 보장 (중복 ID 방지)
+  const id = nanoid();
 
   const newIdea: Idea = {
     id,
     ...idea,
   };
 
-  console.log("생성된 아이디어:", newIdea);
+  console.log("Generated idea:", newIdea);
 
   // 안전한 JSON 직렬화
   try {
     const ideaJson = JSON.stringify(newIdea);
-    console.log("직렬화된 아이디어 JSON:", ideaJson);
+    console.log("Serialized idea JSON:", ideaJson);
 
     await redis.lpush(keys.ideas(teamId), ideaJson);
-    console.log("Redis에 아이디어 저장 완료");
+    console.log("Idea saved to Redis successfully");
 
     return newIdea;
   } catch (error) {
-    console.error("아이디어 저장 중 오류:", error);
-    throw new Error("아이디어 저장에 실패했습니다");
+    console.error("Error saving idea:", error);
+    throw new Error("Failed to save idea");
   }
 }
 
 export async function updateIdea(
   teamId: string,
-  ideaId: number,
+  ideaId: string, // 문자열 ID로 변경
   updates: Partial<Idea>
 ): Promise<Idea | null> {
   const ideas = await getIdeas(teamId);
@@ -682,16 +701,46 @@ export async function addChatMessage(
     return newMessage;
   } catch (error) {
     console.error("채팅 메시지 저장 중 오류:", error);
-    throw new Error("채팅 메시지 저장에 실패했습니다");
+    throw new Error("Failed to save chat message");
   }
 }
 
 // --- Agent Memory Functions ---
 
+// 메모리 조회 중복 방지를 위한 캐시
+const memoryQueryCache = new Map<string, Promise<AgentMemory | null>>();
+const CACHE_TTL = 5000; // 5초
+
 export async function getAgentMemory(
   agentId: string
 ): Promise<AgentMemory | null> {
+  // 중복 호출 방지: 이미 진행 중인 요청이 있으면 같은 Promise 반환
+  if (memoryQueryCache.has(agentId)) {
+    console.log(`⚡ 에이전트 ${agentId} 메모리 조회 캐시 사용`);
+    return memoryQueryCache.get(agentId)!;
+  }
+
   console.log(`🧠 에이전트 ${agentId} 메모리 조회 시작 (v2 우선)`);
+
+  // 새로운 Promise 생성하고 캐시에 저장
+  const memoryPromise = performMemoryQuery(agentId);
+  memoryQueryCache.set(agentId, memoryPromise);
+
+  // TTL 후 캐시에서 제거
+  setTimeout(() => {
+    memoryQueryCache.delete(agentId);
+  }, CACHE_TTL);
+
+  try {
+    return await memoryPromise;
+  } catch (error) {
+    // 에러 발생 시 즉시 캐시에서 제거
+    memoryQueryCache.delete(agentId);
+    throw error;
+  }
+}
+
+async function performMemoryQuery(agentId: string): Promise<AgentMemory | null> {
 
   // 1. 먼저 v2 메모리 시스템 확인
   try {
@@ -1157,14 +1206,14 @@ async function initializeAgentMemoryLegacy(
 
     if (member.isUser) {
       // 사용자의 경우
-      otherAgentId = "나";
-      otherAgentName = "나";
-      // Check if user is actually the leader
-      const userRole = member.isLeader ? "팀 리더" : "팀원";
-      const userSkills = member.isLeader ? "리더십" : "협업";
+      otherAgentId = "Me";
+      otherAgentName = "Me";
+      // User role and skills
+      const userRole = "팀원";
+      const userSkills = "협업";
       otherAgentProfile = {
-        id: "나",
-        name: "나",
+        id: "Me",
+        name: "Me",
         professional: userRole,
         personality: "알 수 없음",
         skills: userSkills,
@@ -1201,8 +1250,8 @@ async function initializeAgentMemoryLegacy(
     );
 
     // relations의 키를 에이전트 이름으로 사용 (ID 대신)
-    // 단, 사용자는 "나"로, 에이전트는 ID로 키를 사용
-    const relationKey = member.isUser ? "나" : otherAgentId;
+    // 단, 사용자는 "Me"로, 에이전트는 ID로 키를 사용
+    const relationKey = member.isUser ? "Me" : otherAgentId;
 
     relations[relationKey] = {
       agentInfo: otherAgentProfile,

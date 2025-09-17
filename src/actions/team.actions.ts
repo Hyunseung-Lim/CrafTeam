@@ -42,10 +42,10 @@ export async function createTeamAction(formData: FormData) {
       };
     }
 
-    // 각 멤버가 최소 하나의 역할을 가지는지 확인
+    // Check if each member has at least one role
     for (const member of members) {
       if (!member.roles || member.roles.length === 0) {
-        throw new Error("모든 팀원에게 최소 하나의 역할을 할당해주세요. (2단계에서 역할 설정)");
+        throw new Error("Please assign at least one role to each team member. (Set roles in step 2)");
       }
     }
 

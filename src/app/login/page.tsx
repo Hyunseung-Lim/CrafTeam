@@ -7,13 +7,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
@@ -38,12 +32,12 @@ export default function LoginPage() {
       });
 
       if (result?.error) {
-        setError("이메일 또는 비밀번호가 올바르지 않습니다.");
+        setError("Email or password is incorrect.");
       } else {
         router.push("/");
       }
     } catch (error) {
-      setError("로그인 중 오류가 발생했습니다.");
+      setError("An error occurred during login.");
     } finally {
       setIsLoading(false);
     }
@@ -53,13 +47,13 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-bold">로그인</CardTitle>
-          <CardDescription>AI 에이전트 팀 빌더에 로그인하세요</CardDescription>
+          <CardTitle className="text-2xl font-bold">Login</CardTitle>
+          <CardDescription>Login to CrafTeam</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={onSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email">이메일</Label>
+              <Label htmlFor="email">Email</Label>
               <Input
                 id="email"
                 name="email"
@@ -70,7 +64,7 @@ export default function LoginPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password">비밀번호</Label>
+              <Label htmlFor="password">Password</Label>
               <Input
                 id="password"
                 name="password"
@@ -86,16 +80,16 @@ export default function LoginPage() {
               </div>
             )}
             <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? "로그인 중..." : "로그인"}
+              {isLoading ? "Logging in..." : "Login"}
             </Button>
           </form>
           <div className="mt-6 text-center text-sm">
-            <span className="text-gray-600">계정이 없으신가요? </span>
+            <span className="text-gray-600">Don't have an account? </span>
             <Link
               href="/signup"
               className="font-semibold text-gray-900 hover:underline"
             >
-              회원가입
+              Sign up
             </Link>
           </div>
         </CardContent>

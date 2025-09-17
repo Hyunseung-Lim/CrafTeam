@@ -27,14 +27,14 @@ export async function POST(
   try {
     const resolvedParams = await params;
     const teamId = resolvedParams.teamId;
-    const ideaId = parseInt(resolvedParams.ideaId);
+    const ideaId = resolvedParams.ideaId; // 이제 문자열 ID 사용
 
     console.log(`📊 평가 API 요청 - 팀ID: ${teamId}, 아이디어ID: ${ideaId}`);
 
-    if (isNaN(ideaId)) {
-      console.error(`❌ 유효하지 않은 아이디어 ID: ${resolvedParams.ideaId}`);
+    if (!ideaId) {
+      console.error(`❌ 아이디어 ID가 없습니다: ${resolvedParams.ideaId}`);
       return NextResponse.json(
-        { error: "유효하지 않은 아이디어 ID입니다." },
+        { error: "아이디어 ID가 필요합니다." },
         { status: 400 }
       );
     }
@@ -167,13 +167,13 @@ export async function POST(
     }
 
     // v2 메모리 업데이트 - 평가자를 위한 업데이트 (AI 에이전트만)
-    if (evaluator !== "나") {
+    if (evaluator !== "Me") {
       try {
         await triggerMemoryUpdate(
           evaluator,
           "idea_evaluation",
           `I evaluated an idea (ID: ${ideaId}) with scores: novelty=${newEvaluation.scores.novelty}, completeness=${newEvaluation.scores.completeness}, quality=${newEvaluation.scores.quality}. Comment: ${newEvaluation.comment || 'No comment'}`,
-          targetIdea.author !== "나" ? targetIdea.author : undefined,
+          targetIdea.author !== "Me" ? targetIdea.author : undefined,
           teamId
         );
         console.log(
@@ -187,7 +187,7 @@ export async function POST(
     }
 
     // v2 메모리 업데이트 - 아이디어 작성자를 위한 업데이트 (자기 아이디어가 아닌 경우만)
-    if (targetIdea.author !== evaluator && targetIdea.author !== "나") {
+    if (targetIdea.author !== evaluator && targetIdea.author !== "Me") {
       try {
         await triggerMemoryUpdate(
           targetIdea.author,
