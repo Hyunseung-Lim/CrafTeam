@@ -70,6 +70,36 @@ export function useAgentStates(teamId: string) {
     let isRequestInProgress = false;
     let consecutiveErrors = 0; // 연속 오류 횟수 추적
 
+    // 전역 강제 새로고침 이벤트 리스너
+    const handleForceRefresh = (event: CustomEvent) => {
+      if (event.detail.teamId === teamId) {
+        console.log("🔄 전역 강제 새로고침 이벤트 수신:", event.detail.data);
+
+        const data = event.detail.data;
+        const statesMap = new Map<string, AgentStateInfo>();
+
+        data.agentStates.forEach((agentData: any) => {
+          const state = agentData.state;
+          if (state && state.agentId) {
+            statesMap.set(state.agentId, state);
+          }
+        });
+
+        setAgentStates(statesMap);
+
+        if (data.userState) {
+          setUserState(data.userState);
+        } else {
+          setUserState(null);
+        }
+
+        consecutiveErrors = 0;
+        setIsConnected(true);
+      }
+    };
+
+    window.addEventListener('forceAgentStateRefresh', handleForceRefresh as EventListener);
+
     const fetchAgentStates = async () => {
       if (!isActive || isRequestInProgress) return;
 
@@ -158,6 +188,7 @@ export function useAgentStates(teamId: string) {
       if (timeoutId) {
         clearTimeout(timeoutId);
       }
+      window.removeEventListener('forceAgentStateRefresh', handleForceRefresh as EventListener);
     };
   }, [teamId]);
 
@@ -200,7 +231,7 @@ export function useAgentStates(teamId: string) {
           0,
           userState.currentTask.estimatedDuration - elapsed
         );
-        newTimers.set("나", remaining);
+        newTimers.set("Me", remaining);
       }
 
       setTimers(newTimers);
@@ -212,10 +243,52 @@ export function useAgentStates(teamId: string) {
     return () => clearInterval(interval);
   }, [agentStates, userState]);
 
+  // 강제 새로고침 함수
+  const forceRefresh = async () => {
+    if (!teamId || isRequestInProgress) return;
+
+    console.log("🔄 강제 새로고침 시작...");
+    isRequestInProgress = true;
+
+    try {
+      const response = await fetch(`/api/teams/${teamId}/agent-states`);
+      if (response.ok) {
+        const data = await response.json();
+
+        const statesMap = new Map<string, AgentStateInfo>();
+
+        data.agentStates.forEach((agentData: any) => {
+          const state = agentData.state;
+          if (state && state.agentId) {
+            statesMap.set(state.agentId, state);
+          }
+        });
+
+        setAgentStates(statesMap);
+
+        if (data.userState) {
+          setUserState(data.userState);
+        } else {
+          setUserState(null);
+        }
+
+        consecutiveErrors = 0;
+        setIsConnected(true);
+
+        console.log("✅ 강제 새로고침 완료:", statesMap);
+      }
+    } catch (error) {
+      console.error("❌ 강제 새로고침 실패:", error);
+    } finally {
+      isRequestInProgress = false;
+    }
+  };
+
   return {
     agentStates,
     userState,
     timers,
     isConnected, // 연결 상태도 반환
+    forceRefresh, // 강제 새로고침 함수 추가
   };
 }

@@ -268,14 +268,17 @@ export async function createTeam(
     console.error("Persona summary generation failed:", error);
   }
 
+  // 안전한 직렬화 사용
+  const { safeStringifyRelationships, safeStringifyNodePositions } = await import("@/lib/safe-parser");
+
   const newTeam = {
     id: teamId,
     ownerId: ownerId,
     teamName: teamName || "",
     topic: topic || "",
     members: JSON.stringify(members || []),
-    relationships: JSON.stringify(relationships || []),
-    nodePositions: JSON.stringify(nodePositions || {}),
+    relationships: safeStringifyRelationships(relationships || []),
+    nodePositions: safeStringifyNodePositions(nodePositions || {}),
     sharedMentalModel: sharedMentalModel || "",
     createdAt: new Date().toISOString(),
   };
@@ -334,11 +337,11 @@ export async function getTeamById(id: string): Promise<Team | null> {
     ownerId = teamData.owner;
   }
 
-  // members, relationships, nodePositions 안전하게 파싱
-  let members = [];
-  let relationships = [];
-  let nodePositions = {};
+  // 새로운 안전한 파서 사용
+  const { safeParseTeamData } = await import("@/lib/safe-parser");
 
+  // members는 기존 로직 유지 (별도 타입)
+  let members = [];
   try {
     if (typeof teamData.members === "string") {
       members = JSON.parse(teamData.members);
@@ -350,26 +353,21 @@ export async function getTeamById(id: string): Promise<Team | null> {
     members = [];
   }
 
-  try {
-    if (typeof teamData.relationships === "string") {
-      relationships = JSON.parse(teamData.relationships);
-    } else if (Array.isArray(teamData.relationships)) {
-      relationships = teamData.relationships;
-    }
-  } catch (error) {
-    console.error("Relationships 파싱 오류:", error);
-    relationships = [];
+  // relationships와 nodePositions는 새로운 안전한 파서 사용
+  const {
+    relationships,
+    nodePositions,
+    parseErrors,
+    parseWarnings
+  } = safeParseTeamData(teamData);
+
+  // 파싱 오류가 있으면 로그 출력
+  if (parseErrors.length > 0) {
+    console.error(`팀 ${id} 데이터 파싱 오류:`, parseErrors);
   }
 
-  try {
-    if (typeof teamData.nodePositions === "string") {
-      nodePositions = JSON.parse(teamData.nodePositions);
-    } else if (typeof teamData.nodePositions === "object" && teamData.nodePositions !== null) {
-      nodePositions = teamData.nodePositions;
-    }
-  } catch (error) {
-    console.error("NodePositions 파싱 오류:", error);
-    nodePositions = {};
+  if (parseWarnings.length > 0) {
+    console.warn(`팀 ${id} 데이터 파싱 경고:`, parseWarnings);
   }
 
   return {
@@ -409,7 +407,8 @@ export async function updateTeam(
   }
 
   if (teamData.relationships) {
-    updateData.relationships = JSON.stringify(teamData.relationships);
+    const { safeStringifyRelationships } = await import("@/lib/safe-parser");
+    updateData.relationships = safeStringifyRelationships(teamData.relationships);
   }
 
   if (teamData.sharedMentalModel !== undefined) {

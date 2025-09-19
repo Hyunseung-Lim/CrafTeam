@@ -284,32 +284,27 @@ async function updateAgentState(
   taskDescription?: string
 ): Promise<void> {
   try {
-    const response = await fetch(
-      `${
-        process.env.NEXTAUTH_URL || "http://localhost:3000"
-      }/api/teams/${teamId}/agent-states`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          agentId,
-          currentState: state,
-          taskType: state === "reflecting" ? "reflecting" : undefined,
-          taskDescription:
-            taskDescription ||
-            (state === "reflecting"
-              ? "경험을 바탕으로 자기 성찰 중"
-              : undefined),
-          estimatedDuration: state === "reflecting" ? 10 : undefined, // 10초 예상
-        }),
-      }
-    );
+    // 직접 함수 호출로 변경 (HTTP 호출 대신)
+    const { setAgentState, createNewIdleTimer } = await import("@/lib/agent-state-utils");
 
-    if (!response.ok) {
-      console.error(`에이전트 ${agentId} 상태 업데이트 실패:`, response.status);
-    }
+    const stateData = {
+      agentId,
+      currentState: state,
+      lastStateChange: new Date().toISOString(),
+      isProcessing: state !== "idle",
+      ...(state === "idle" && { idleTimer: createNewIdleTimer() }),
+      ...(taskDescription && {
+        currentTask: {
+          type: state === "reflecting" ? "reflecting" : "thinking",
+          description: taskDescription || (state === "reflecting" ? "경험을 바탕으로 자기 성찰 중" : ""),
+          startTime: new Date().toISOString(),
+          estimatedDuration: state === "reflecting" ? 10 : 30,
+          trigger: "autonomous",
+        }
+      })
+    };
+
+    await setAgentState(teamId, agentId, stateData);
   } catch (error) {
     console.error(`에이전트 ${agentId} 상태 업데이트 오류:`, error);
   }

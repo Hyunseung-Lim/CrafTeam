@@ -112,7 +112,7 @@ export async function getJsonResponse(prompt: string, agentProfile?: any) {
     }
 
     systemPrompt +=
-      "\n\nGenerate responses that reflect your unique background, expertise, and perspective. Always respond in Korean.";
+      "\n\nGenerate responses that reflect your unique background, expertise, and perspective.";
 
     messages.push(new SystemMessage(systemPrompt));
   }
@@ -726,45 +726,53 @@ ${agentContext}`,
       throw new Error(`Invalid action: ${planResult.action}`);
     }
 
-    // 에이전트가 수행할 수 없는 행동인지 확인
-    if (
-      planResult.action === "generate_idea" &&
-      !hasRole("Idea Generation")
-    ) {
+    // 에이전트가 수행할 수 없는 행동인지 확인하고 대안 행동 선택
+    const isActionUnavailable = (
+      (planResult.action === "generate_idea" && !hasRole("Idea Generation")) ||
+      (planResult.action === "evaluate_idea" && !hasRole("Idea Evaluation")) ||
+      (planResult.action === "give_feedback" && !hasRole("Feedback"))
+    );
+
+    if (isActionUnavailable) {
       console.log(
-        `⚠️ ${userProfile.name}은 아이디어 생성 역할이 없어서 대기로 변경`
+        `⚠️ ${userProfile.name}이 ${planResult.action}을 시도했지만 역할이 없어서 대안 행동 선택`
       );
       console.log(`🔍 ${userProfile.name}의 실제 역할:`, agentRoles);
-      console.log(`🔍 확인하려는 역할: "Idea Generation"`);
-      return {
-        action: "wait",
-        reasoning: `아이디어 생성 역할이 없어서 대기합니다. (원래 계획: ${planResult.reasoning})`,
-      };
-    }
+      console.log(`🔍 원래 계획된 행동: "${planResult.action}"`);
 
-    if (
-      planResult.action === "evaluate_idea" &&
-      !hasRole("Idea Evaluation")
-    ) {
-      console.log(
-        `⚠️ ${userProfile.name}은 아이디어 평가 역할이 없어서 대기로 변경`
-      );
-      console.log(`🔍 ${userProfile.name}의 실제 역할:`, agentRoles);
-      console.log(`🔍 확인하려는 역할: "Idea Evaluation"`);
-      return {
-        action: "wait",
-        reasoning: `아이디어 평가 역할이 없어서 대기합니다. (원래 계획: ${planResult.reasoning})`,
-      };
-    }
+      // 수행 가능한 대안 행동 찾기
+      const availableActions = [];
+      if (hasRole("Idea Generation")) {
+        availableActions.push("generate_idea");
+      }
+      if (hasRole("Idea Evaluation") && teamContext.currentIdeasCount > 0) {
+        availableActions.push("evaluate_idea");
+      }
+      if (hasRole("Feedback") && canGiveFeedback) {
+        availableActions.push("give_feedback");
+      }
+      if (hasRole("Request") && canMakeRequestFlag) {
+        availableActions.push("make_request");
+      }
 
-    if (planResult.action === "give_feedback" && !hasRole("Feedback")) {
-      console.log(`⚠️ ${userProfile.name}은 피드백 역할이 없어서 대기로 변경`);
-      console.log(`🔍 ${userProfile.name}의 실제 역할:`, agentRoles);
-      console.log(`🔍 확인하려는 역할: "Feedback"`);
-      return {
-        action: "wait",
-        reasoning: `피드백 역할이 없어서 대기합니다. (원래 계획: ${planResult.reasoning})`,
-      };
+      if (availableActions.length > 0) {
+        // 랜덤하게 대안 행동 선택 (다양성 확보)
+        const fallbackAction = availableActions[Math.floor(Math.random() * availableActions.length)];
+        console.log(`✅ 대안 행동 선택: ${fallbackAction} (가능한 행동: ${availableActions.join(', ')})`);
+
+        return {
+          action: fallbackAction,
+          reasoning: `역할 제한으로 인해 ${planResult.action} 대신 ${fallbackAction}을 선택했습니다. (원래 계획: ${planResult.reasoning})`,
+          target: planResult.target,
+        };
+      } else {
+        // 수행 가능한 행동이 없으면 대기
+        console.log(`⚠️ 수행 가능한 행동이 없어서 대기 상태로 변경`);
+        return {
+          action: "wait",
+          reasoning: `수행 가능한 역할이 없어서 대기합니다. (원래 계획: ${planResult.reasoning})`,
+        };
+      }
     }
 
     if (planResult.action === "give_feedback" && hasRole("Feedback") && !canGiveFeedback) {
@@ -775,14 +783,32 @@ ${agentContext}`,
       };
     }
 
+    // make_request 역할 체크는 위의 isActionUnavailable에서 처리됨
     if (planResult.action === "make_request" && !hasRole("Request")) {
-      console.log(`⚠️ ${userProfile.name}은 요청 역할이 없어서 대기로 변경`);
+      // 이미 위에서 처리되었지만, 혹시 빠진 경우를 위한 fallback
+      console.log(`⚠️ ${userProfile.name}은 요청 역할이 없음 - 위에서 처리되지 않은 경우`);
       console.log(`🔍 ${userProfile.name}의 실제 역할:`, agentRoles);
-      console.log(`🔍 확인하려는 역할: "Request"`);
-      return {
-        action: "wait",
-        reasoning: `요청 역할이 없어서 대기합니다. (원래 계획: ${planResult.reasoning})`,
-      };
+
+      // 동일한 대안 행동 선택 로직 적용
+      const availableActions = [];
+      if (hasRole("Idea Generation")) availableActions.push("generate_idea");
+      if (hasRole("Idea Evaluation") && teamContext.currentIdeasCount > 0) availableActions.push("evaluate_idea");
+      if (hasRole("Feedback") && canGiveFeedback) availableActions.push("give_feedback");
+
+      if (availableActions.length > 0) {
+        const fallbackAction = availableActions[Math.floor(Math.random() * availableActions.length)];
+        console.log(`✅ 대안 행동 선택: ${fallbackAction}`);
+        return {
+          action: fallbackAction,
+          reasoning: `요청 역할이 없어서 ${fallbackAction}을 선택했습니다. (원래 계획: ${planResult.reasoning})`,
+          target: planResult.target,
+        };
+      } else {
+        return {
+          action: "wait",
+          reasoning: `요청 역할이 없고 다른 가능한 행동도 없어서 대기합니다.`,
+        };
+      }
     }
 
     if (planResult.action === "make_request" && hasRole("Request") && !canMakeRequestFlag) {
@@ -1300,7 +1326,7 @@ export async function generateFeedbackSessionResponse(
       messages: [
         {
           role: "system",
-          content: `You are an AI agent participating in a feedback session. Provide natural, conversational feedback in Korean while following the guidelines. Respond only with valid JSON.
+          content: `You are an AI agent participating in a feedback session. Provide natural, conversational feedback in English while following the guidelines. Respond only with valid JSON.
 
 ${agentContext}`,
         },
@@ -1326,7 +1352,20 @@ ${agentContext}`,
       jsonString = jsonString.replace(/^```\s*/, "").replace(/\s*```$/, "");
     }
 
-    const parsed = JSON.parse(jsonString);
+    let parsed;
+    try {
+      parsed = JSON.parse(jsonString);
+    } catch (parseError) {
+      console.error("❌ [피드백세션] JSON 파싱 실패, 응답 내용:", jsonString);
+      console.error("❌ [피드백세션] 파싱 에러:", parseError);
+
+      // JSON 파싱 실패 시 기본 응답으로 대체
+      parsed = {
+        response: "I'd like to provide feedback on your contributions to the team.",
+        shouldEnd: false,
+        reasoning: "Default response due to JSON parsing error"
+      };
+    }
 
     // 강제로 계속 진행하거나 종료해야 하는 경우 shouldEnd를 override
     const finalShouldEnd = shouldForceContinue
@@ -1336,7 +1375,7 @@ ${agentContext}`,
       : parsed.shouldEnd || false;
 
     return {
-      response: parsed.response || "피드백을 공유하고 싶습니다.",
+      response: parsed.response || "I'd like to share some feedback with you.",
       shouldEnd: finalShouldEnd,
       reasoning: shouldForceContinue
         ? `대화 지속 필요 (현재 ${actualMessageCount}개 메시지, 최소 ${minMessages}개 필요)`
@@ -1355,7 +1394,7 @@ ${agentContext}`,
 
     // 기본값 반환
     return {
-      response: "좋은 의견 감사합니다. 더 자세히 이야기해보면 좋을 것 같아요.",
+      response: "Thank you for your input. I'd like to discuss this further.",
       shouldEnd: shouldEndDefault,
       reasoning: `안전한 기본 응답 (메시지 수: ${actualMessageCount})`,
     };

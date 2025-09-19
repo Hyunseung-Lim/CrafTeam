@@ -33,13 +33,23 @@ export async function POST(
     }
 
     // 발송자가 세션 참가자인지 확인
+    console.log(`🔍 메시지 발송자 확인: ${sender}`, {
+      participants: session.participants.map(p => ({ id: p.id, name: p.name, isUser: p.isUser }))
+    });
+
     const isParticipant = session.participants.some((p) => {
-      // "나", "user", 또는 실제 sender ID와 일치하는지 확인
-      return (
+      // "Me", "user", 또는 실제 sender ID와 일치하는지 확인
+      const match = (
         p.id === sender ||
-        (sender === "나" && (p.id === "나" || p.id === "user" || p.isUser)) ||
-        (sender === "user" && (p.id === "나" || p.id === "user" || p.isUser))
+        (sender === "Me" && (p.id === "Me" || p.id === "user" || p.isUser)) ||
+        (sender === "user" && (p.id === "Me" || p.id === "user" || p.isUser))
       );
+
+      if (match) {
+        console.log(`✅ 참가자 매칭 성공: ${sender} → ${p.id} (isUser: ${p.isUser})`);
+      }
+
+      return match;
     });
 
     if (!isParticipant) {
@@ -94,7 +104,45 @@ export async function POST(
       }
     }
 
-    console.log(`📨 피드백 세션 메시지 전송 완료: ${sessionId}`);
+    console.log(`📨 피드백 세션 메시지 전송 완료: ${sessionId}`, {
+      messageId: newMessage.id,
+      sender: newMessage.sender,
+      content: newMessage.content.substring(0, 50) + "...",
+      totalMessages: session.messages.length
+    });
+
+    // 상대방 에이전트의 응답 트리거 (AI 에이전트만)
+    const otherParticipant = session.participants.find(p =>
+      p.id !== sender && !p.isUser // 사용자가 아닌 다른 참가자
+    );
+
+    if (otherParticipant) {
+      console.log(`🤖 ${otherParticipant.name} AI 응답 트리거 예약 (3초 후)`);
+
+      // 3초 후 AI 응답 트리거
+      setTimeout(async () => {
+        try {
+          console.log(`🚀 ${otherParticipant.name} AI 응답 생성 시작`);
+
+          const { processAIFeedbackResponse } = await import("@/lib/ai-feedback-utils");
+
+          const aiResponse = await processAIFeedbackResponse({
+            teamId,
+            sessionId,
+            triggerAgentId: otherParticipant.id,
+            action: "respond"
+          });
+
+          if (aiResponse.success) {
+            console.log(`✅ ${otherParticipant.name} AI 응답 생성 완료`);
+          } else {
+            console.error(`❌ ${otherParticipant.name} AI 응답 생성 실패:`, aiResponse.error);
+          }
+        } catch (error) {
+          console.error(`❌ ${otherParticipant.name} AI 응답 트리거 오류:`, error);
+        }
+      }, 3000);
+    }
 
     return NextResponse.json({
       success: true,

@@ -327,19 +327,35 @@ export async function POST(
       console.log(`요청 상세 정보:`, JSON.stringify(requestData, null, 2));
 
       // 현재 에이전트 상태 확인
-      const currentAgentState = await getAgentState(teamId, agentId);
+      let currentAgentState = await getAgentState(teamId, agentId);
       console.log(
         `현재 에이전트 상태:`,
         JSON.stringify(currentAgentState, null, 2)
       );
 
-      // 에이전트 상태가 없는 경우
+      // 에이전트 상태가 없는 경우 기본 상태 생성
       if (!currentAgentState) {
-        console.error(`❌ 에이전트 ${agentId} 상태를 찾을 수 없습니다.`);
-        return NextResponse.json(
-          { error: "에이전트 상태를 찾을 수 없습니다." },
-          { status: 404 }
-        );
+        console.log(`⚠️ 에이전트 ${agentId} 상태가 없어서 기본 상태 생성`);
+        const defaultState = {
+          agentId,
+          currentState: "idle" as const,
+          lastStateChange: new Date().toISOString(),
+          isProcessing: false,
+          idleTimer: createNewIdleTimer(),
+        };
+
+        try {
+          await setAgentState(teamId, agentId, defaultState);
+          console.log(`✅ 에이전트 ${agentId} 기본 상태 생성 완료`);
+          // 생성된 상태를 현재 상태로 설정
+          currentAgentState = defaultState;
+        } catch (error) {
+          console.error(`❌ 에이전트 ${agentId} 기본 상태 생성 실패:`, error);
+          return NextResponse.json(
+            { error: "에이전트 상태 생성에 실패했습니다." },
+            { status: 500 }
+          );
+        }
       }
 
       // 피드백 세션 중인지 확인

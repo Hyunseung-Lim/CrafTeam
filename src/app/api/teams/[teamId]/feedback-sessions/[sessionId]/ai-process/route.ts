@@ -7,6 +7,7 @@ import {
 } from "@/lib/openai";
 import { getAgentById, getAgentMemory } from "@/lib/redis";
 import { processMemoryUpdate } from "@/lib/memory";
+import { getBaseUrlFromNextRequest } from "@/lib/api-utils";
 
 // AI 에이전트 피드백 세션 처리
 export async function POST(
@@ -185,7 +186,7 @@ export async function POST(
         );
 
         try {
-          const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
+          const baseUrl = getBaseUrlFromNextRequest(request);
           const response = await fetch(
             `${baseUrl}/api/teams/${teamId}/agent-states`,
             {
@@ -237,7 +238,7 @@ export async function POST(
 
         // 피드백 세션 종료 API 호출로 통합 처리
         try {
-          const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
+          const baseUrl = getBaseUrlFromNextRequest(request);
           const endResponse = await fetch(
             `${baseUrl}/api/teams/${teamId}/feedback-sessions`,
             {
@@ -386,10 +387,10 @@ export async function POST(
 
         // 참가자들의 에이전트 상태를 idle로 되돌리기 (에러 무시)
         for (const participant of session.participants) {
-          if (!participant.isUser && participant.id !== "나") {
+          if (!participant.isUser && participant.id !== "Me") {
             try {
               const baseUrl =
-                process.env.NEXTAUTH_URL || "http://localhost:3000";
+                getBaseUrlFromNextRequest(request);
               const response = await fetch(
                 `${baseUrl}/api/teams/${teamId}/agent-states`,
                 {
@@ -450,38 +451,25 @@ export async function POST(
         );
 
         try {
-          const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
-          const stateResponse = await fetch(
-            `${baseUrl}/api/teams/${teamId}/agent-states`,
-            {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                "User-Agent": "TeamBuilder-Internal",
-              },
-              body: JSON.stringify({
-                agentId: triggerAgentId,
-                currentState: "feedback_session",
-                taskType: "feedback_session",
-                taskDescription: `${otherParticipant.name}와 피드백 세션 진행 중`,
-                estimatedDuration: 300, // 5분 예상
-                trigger: "autonomous",
-                sessionInfo: {
-                  sessionId,
-                  participants: session.participants.map((p) => p.name),
-                },
-              }),
-            }
-          );
+          const { setAgentState } = await import("@/lib/agent-state-utils");
 
-          if (stateResponse.ok) {
-            console.log(`✅ ${agent.name} 피드백 세션 상태 유지 확인 완료`);
-          } else {
-            console.warn(
-              `⚠️ ${agent.name} 피드백 세션 상태 유지 실패:`,
-              stateResponse.status
-            );
-          }
+          await setAgentState(teamId, triggerAgentId, {
+            agentId: triggerAgentId,
+            currentState: "feedback_session",
+            lastStateChange: new Date().toISOString(),
+            isProcessing: true,
+            currentTask: {
+              type: "feedback_session",
+              description: `${otherParticipant.name}와 피드백 세션 진행 중`,
+              startedAt: new Date().toISOString(),
+              sessionInfo: {
+                sessionId,
+                participants: session.participants.map((p) => p.name),
+              },
+            },
+          });
+
+          console.log(`✅ ${agent.name} 피드백 세션 상태 유지 확인 완료`);
         } catch (stateError) {
           console.warn(
             `⚠️ ${agent.name} 피드백 세션 상태 유지 오류:`,
@@ -511,7 +499,7 @@ export async function POST(
         console.log(`💬 AI 피드백 세션 응답 완료: ${sessionId}`);
 
         // AI-AI 세션인 경우 상대방도 자동으로 응답하도록 트리거
-        if (!otherParticipant.isUser && otherParticipant.id !== "나") {
+        if (!otherParticipant.isUser && otherParticipant.id !== "Me") {
           console.log(
             `🔄 AI-AI 세션 - 상대방 ${otherParticipant.name} 자동 응답 트리거`
           );
@@ -523,7 +511,7 @@ export async function POST(
 
               const counterResponse = await fetch(
                 `${
-                  process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"
+                  getBaseUrlFromNextRequest(request)
                 }/api/teams/${teamId}/feedback-sessions/${sessionId}/ai-process`,
                 {
                   method: "POST",

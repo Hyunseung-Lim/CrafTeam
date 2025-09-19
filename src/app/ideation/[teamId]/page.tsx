@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { useParams } from "next/navigation";
+import "@/lib/client-reset-utils"; // 전역 초기화 함수 등록
 import Link from "next/link";
 import { getTeamAction } from "@/actions/team.actions";
 import { getUserAgentsAction } from "@/actions/agent.actions";
@@ -181,14 +182,52 @@ export default function IdeationPage() {
   };
 
   // 에이전트가 피드백 세션 중인지 확인하는 함수 (인간 포함)
+  // UI용 동기 버전 (클라이언트 캐시 사용)
   const isAgentInFeedbackSession = (agentId: string): boolean => {
     if (agentId === "Me") {
-      // 인간 사용자의 경우
-      return userState?.currentState === "feedback_session";
+      return userState?.currentState === "feedback_session" || false;
     } else {
-      // AI 에이전트의 경우
       const agentState = agentStates.get(agentId);
-      return agentState?.currentState === "feedback_session";
+      return agentState?.currentState === "feedback_session" || false;
+    }
+  };
+
+  // 실제 액션 수행 전 서버 상태 확인용 비동기 버전
+  const checkAgentInFeedbackSessionServer = async (agentId: string): Promise<boolean> => {
+    try {
+      console.log(`🔍 ${agentId} 피드백 세션 상태 서버 확인 중...`);
+
+      const response = await fetch(`/api/teams/${team?.id}/agent-states`);
+      if (!response.ok) {
+        console.error("❌ 에이전트 상태 조회 실패:", response.statusText);
+        // 서버 조회 실패 시 클라이언트 캐시 사용 (fallback)
+        return isAgentInFeedbackSession(agentId);
+      }
+
+      const data = await response.json();
+
+      if (agentId === "Me") {
+        const serverUserState = data.userState;
+        const isInSession = serverUserState?.currentState === "feedback_session";
+        console.log(`🔍 사용자 서버 상태:`, {
+          currentState: serverUserState?.currentState,
+          isInFeedbackSession: isInSession
+        });
+        return isInSession;
+      } else {
+        const agentData = data.agentStates.find((a: any) => a.agentId === agentId);
+        const isInSession = agentData?.state?.currentState === "feedback_session" || agentData?.isFeedbackSession;
+        console.log(`🔍 ${agentId} 서버 상태:`, {
+          currentState: agentData?.state?.currentState,
+          isFeedbackSession: agentData?.isFeedbackSession,
+          isInSession
+        });
+        return isInSession;
+      }
+    } catch (error) {
+      console.error(`❌ ${agentId} 피드백 세션 상태 확인 실패:`, error);
+      // 에러 시 클라이언트 캐시 사용 (fallback)
+      return isAgentInFeedbackSession(agentId);
     }
   };
 
@@ -196,7 +235,7 @@ export default function IdeationPage() {
   const ideasSortedByCreation = [...ideas].sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
 
   // Debug: Check for duplicate IDs
-  console.log('🔍 All idea IDs:', ideas.map(idea => ({ id: idea.id, type: typeof idea.id })));
+  // console.log('🔍 All idea IDs:', ideas.map(idea => ({ id: idea.id, type: typeof idea.id })));
   const idCounts = ideas.reduce((acc, idea) => {
     acc[idea.id] = (acc[idea.id] || 0) + 1;
     return acc;
@@ -458,15 +497,17 @@ export default function IdeationPage() {
   const handleSendMessage = async () => {
     if (!newMessage.trim() || !team || !mentionedAgent) return;
 
-    // 🔒 사용자가 피드백 세션 중인지 확인
-    if (isAgentInFeedbackSession("Me")) {
+    // 🔒 사용자가 피드백 세션 중인지 확인 (서버에서 실시간 확인)
+    const userInSession = await checkAgentInFeedbackSessionServer("Me");
+    if (userInSession) {
       alert(
         "Currently participating in a feedback session. Please end the feedback session and try again."
       );
       return;
     }
 
-    if (isAgentInFeedbackSession(mentionedAgent.id)) {
+    const agentInSession = await checkAgentInFeedbackSessionServer(mentionedAgent.id);
+    if (agentInSession) {
       alert(
         `${mentionedAgent.name} is currently participating in another feedback session. Please try again later.`
       );
@@ -502,6 +543,7 @@ export default function IdeationPage() {
     }
 
     // 낙관적 업데이트
+    const finalRequestType = chatMode === "make_request" ? (requestType || "generate") : undefined;
     const tempMessage = {
       id: `temp-${Date.now()}`,
       sender: "Me",
@@ -511,7 +553,7 @@ export default function IdeationPage() {
         type: chatMode,
         content: newMessage.trim(),
         mention: mentionedAgent.id,
-        requestType: chatMode === "make_request" ? requestType : undefined,
+        requestType: finalRequestType,
       },
     };
 
@@ -837,7 +879,7 @@ export default function IdeationPage() {
 
             // 다른 참여자 찾기 (AI 에이전트)
             const otherParticipant = session.participants.find(
-              (p: any) => p.id !== "나"
+              (p: any) => p.id !== "Me"
             );
             if (!otherParticipant) continue;
 

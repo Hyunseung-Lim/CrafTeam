@@ -195,8 +195,8 @@ async function updateMemoryAfterEvaluation(
 
   // 2. 상호작용 기록 추가
   // authorId를 올바른 관계 키로 변환
-  // "나"는 그대로, 에이전트 ID는 그대로 사용
-  const relationKey = authorId === "나" ? "나" : authorId;
+  // "Me"는 그대로, 에이전트 ID는 그대로 사용
+  const relationKey = authorId === "Me" ? "Me" : authorId;
   console.log("관계 키 변환:", { authorId, relationKey });
   console.log("현재 관계 목록:", Object.keys(memory.longTerm.relations));
 
@@ -230,7 +230,7 @@ async function updateMemoryAfterEvaluation(
     memory.longTerm.relations[relationKey] = {
       agentInfo: {
         id: authorId,
-        name: authorId === "나" ? "나" : `에이전트 ${authorId}`,
+        name: authorId === "Me" ? "Me" : `에이전트 ${authorId}`,
         professional: "알 수 없음",
         personality: "알 수 없음",
         skills: "알 수 없음",

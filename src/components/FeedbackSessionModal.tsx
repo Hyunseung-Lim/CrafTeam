@@ -109,13 +109,13 @@ export default function FeedbackSessionModal({
         },
         body: JSON.stringify({
           action: "create",
-          initiatorId: "나",
+          initiatorId: "Me",
           targetAgentId: sessionData.mentionedAgent.id,
           message: sessionData.message,
           feedbackContext: {
             type: "general_feedback",
             initiatedBy: "user",
-            description: "사용자가 시작한 피드백 세션",
+            description: "User-initiated feedback session",
           },
         }),
       });
@@ -125,10 +125,10 @@ export default function FeedbackSessionModal({
         setSession(data.session);
       } else {
         const errorData = await response.json();
-        console.error("❌ 피드백 세션 생성 실패:", errorData.error);
+        console.error("❌ Failed to create feedback session:", errorData.error);
       }
     } catch (error) {
-      console.error("❌ 피드백 세션 생성 실패:", error);
+      console.error("❌ Failed to create feedback session:", error);
     } finally {
       setIsCreatingSession(false);
     }
@@ -189,7 +189,7 @@ export default function FeedbackSessionModal({
           }
         }
       } catch (error) {
-        console.error("세션 폴링 실패:", error);
+        console.error("Session polling failed:", error);
       }
     };
 
@@ -205,27 +205,55 @@ export default function FeedbackSessionModal({
 
   // 메시지 전송
   const handleSendMessage = async () => {
-    if (!newMessage.trim() || isLoading || !session || !teamId || sessionEnded)
+    console.log("🚀 handleSendMessage 호출됨");
+    console.log("🔍 현재 상태:", {
+      hasMessage: !!newMessage.trim(),
+      messageLength: newMessage.trim().length,
+      isLoading,
+      hasSession: !!session,
+      sessionStatus: session?.status,
+      hasTeamId: !!teamId,
+      sessionEnded
+    });
+
+    if (!newMessage.trim() || isLoading || !session || !teamId || sessionEnded) {
+      console.log("🚫 메시지 전송 조건 미충족:", {
+        hasMessage: !!newMessage.trim(),
+        isLoading,
+        hasSession: !!session,
+        hasTeamId: !!teamId,
+        sessionEnded
+      });
       return;
+    }
+
+    console.log("📤 메시지 전송 시작:", {
+      sessionId: session.id,
+      teamId,
+      message: newMessage.trim(),
+    });
 
     setIsLoading(true);
     try {
-      const response = await fetch(
-        `/api/teams/${teamId}/feedback-sessions/${session.id}/messages`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            sender: "나",
-            content: newMessage.trim(),
-          }),
-        }
-      );
+      const url = `/api/teams/${teamId}/feedback-sessions/${session.id}/messages`;
+      console.log("🔗 POST 요청 URL:", url);
+
+      const response = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          sender: "Me",
+          content: newMessage.trim(),
+        }),
+      });
+
+      console.log("📥 응답 상태:", response.status, response.ok);
 
       if (response.ok) {
         const data = await response.json();
+        console.log("✅ 메시지 전송 성공:", data);
         setSession(data.session);
         setNewMessage("");
 
@@ -233,6 +261,13 @@ export default function FeedbackSessionModal({
         setTimeout(async () => {
           let aiData;
           try {
+            console.log("🤖 AI 응답 트리거 시작:", {
+              sessionId: session.id,
+              teamId,
+              triggerAgentId: sessionData?.mentionedAgent.id,
+              url: `/api/teams/${teamId}/feedback-sessions/${session.id}/ai-process`
+            });
+
             setAiGenerating(true); // AI 응답 생성 시작
             const aiResponse = await fetch(
               `/api/teams/${teamId}/feedback-sessions/${session.id}/ai-process`,
@@ -248,18 +283,30 @@ export default function FeedbackSessionModal({
               }
             );
 
+            console.log("🤖 AI 응답 API 상태:", aiResponse.status, aiResponse.ok);
+
             if (aiResponse.ok) {
               aiData = await aiResponse.json();
+              console.log("✅ AI 응답 성공:", aiData);
               setSession(aiData.session);
-
-              console.log("🔍 [피드백세션] AI 응답 결과:", {
-                sessionEnded: aiData.sessionEnded,
-                sessionStatus: aiData.session?.status,
-                sessionId: aiData.session?.id,
-                messageCount: aiData.session?.messages?.length
+            } else {
+              const errorText = await aiResponse.text();
+              console.error("❌ AI 응답 실패:", {
+                status: aiResponse.status,
+                statusText: aiResponse.statusText,
+                error: errorText
               });
+            }
 
-              if (aiData.sessionEnded) {
+              if (aiData) {
+                console.log("🔍 [피드백세션] AI 응답 결과:", {
+                  sessionEnded: aiData.sessionEnded,
+                  sessionStatus: aiData.session?.status,
+                  sessionId: aiData.session?.id,
+                  messageCount: aiData.session?.messages?.length
+                });
+
+                if (aiData.sessionEnded) {
                 console.log("🏁 [피드백세션] AI가 세션 종료 - 모달 닫기 프로세스 시작");
                 setAiGenerating(false);
                 setSessionEnded(true);
@@ -281,16 +328,24 @@ export default function FeedbackSessionModal({
               }
             }
           } catch (error) {
-            console.error("AI 응답 요청 실패:", error);
+            console.error("AI response request failed:", error);
           } finally {
             if (!aiData?.sessionEnded) {
               setAiGenerating(false); // AI 응답 생성 완료
             }
           }
         }, 1000); // 1초 후 응답 (더 빠른 응답)
+      } else {
+        const errorData = await response.text();
+        console.error("❌ 메시지 전송 실패:", {
+          status: response.status,
+          statusText: response.statusText,
+          error: errorData
+        });
+        return;
       }
     } catch (error) {
-      console.error("메시지 전송 실패:", error);
+      console.error("Message sending failed:", error);
     } finally {
       setIsLoading(false);
     }
@@ -318,7 +373,7 @@ export default function FeedbackSessionModal({
         setSession(data.session);
       }
     } catch (error) {
-      console.error("세션 종료 실패:", error);
+      console.error("Session end failed:", error);
     }
   };
 
@@ -331,11 +386,11 @@ export default function FeedbackSessionModal({
       (end.getTime() - start.getTime()) / (1000 * 60)
     );
 
-    if (diffMinutes < 1) return "1분 미만";
-    if (diffMinutes < 60) return `${diffMinutes}분`;
+    if (diffMinutes < 1) return "Less than 1 minute";
+    if (diffMinutes < 60) return `${diffMinutes} minutes`;
     const hours = Math.floor(diffMinutes / 60);
     const minutes = diffMinutes % 60;
-    return `${hours}시간 ${minutes}분`;
+    return `${hours} hours ${minutes} minutes`;
   };
 
   // 컴포넌트 언마운트 시 모든 인터벌 정리
@@ -366,7 +421,7 @@ export default function FeedbackSessionModal({
           <div className="p-6">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-bold text-gray-900">
-                💬 피드백 세션 시작
+                💬 Start Feedback Session
               </h2>
               <button
                 onClick={onClose}
@@ -379,11 +434,11 @@ export default function FeedbackSessionModal({
             <div className="space-y-4">
               <div className="bg-blue-50 p-4 rounded-lg">
                 <h3 className="font-medium text-gray-900 mb-2">
-                  {sessionData.mentionedAgent.name}와 피드백 세션을
-                  시작하시겠습니까?
+                  Would you like to start a feedback session with
+                  {sessionData.mentionedAgent.name}?
                 </h3>
                 <p className="text-sm text-gray-600">
-                  전송할 메시지: "{sessionData.message}"
+                  Message to send: "{sessionData.message}"
                 </p>
               </div>
 
@@ -393,10 +448,10 @@ export default function FeedbackSessionModal({
                   disabled={isCreatingSession}
                   className="flex-1"
                 >
-                  {isCreatingSession ? "세션 생성 중..." : "피드백 세션 시작"}
+                  {isCreatingSession ? "Creating session..." : "Start Feedback Session"}
                 </Button>
                 <Button onClick={onClose} variant="outline" className="flex-1">
-                  취소
+                  Cancel
                 </Button>
               </div>
             </div>
@@ -416,7 +471,7 @@ export default function FeedbackSessionModal({
             <div className="flex items-center gap-2">
               <MessageCircle className="h-5 w-5 text-blue-600" />
               <h2 className="text-lg font-bold text-gray-900">
-                {sessionData.mentionedAgent.name}와의 피드백 세션
+                Feedback Session with {sessionData.mentionedAgent.name}
               </h2>
             </div>
             <div
@@ -426,7 +481,7 @@ export default function FeedbackSessionModal({
                   : "bg-gray-100 text-gray-700"
               }`}
             >
-              {session.status === "active" ? "진행중" : "종료됨"}
+              {session.status === "active" ? "In Progress" : "Ended"}
             </div>
           </div>
           <div className="flex items-center gap-3">
@@ -446,7 +501,7 @@ export default function FeedbackSessionModal({
         {/* 참가자 정보 */}
         <div className="p-3 bg-gray-50 border-b border-gray-200">
           <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-600">참가자:</span>
+            <span className="text-sm text-gray-600">Participants:</span>
             {session.participants.map((participant, index) => (
               <span
                 key={participant.id}
@@ -462,7 +517,7 @@ export default function FeedbackSessionModal({
         {/* 메시지 목록 */}
         <div className="flex-1 overflow-y-auto p-4 space-y-3">
           {session.messages.map((message) => {
-            const isMyMessage = message.sender === "나";
+            const isMyMessage = message.sender === "Me";
 
             if (message.type === "system") {
               return (
@@ -528,7 +583,7 @@ export default function FeedbackSessionModal({
                       <div className="w-2 h-2 bg-gray-400 rounded-full animate-dot-pulse animation-delay-400"></div>
                     </div>
                     <span className="text-xs text-gray-500 ml-2">
-                      응답 생성 중...
+                      Generating response...
                     </span>
                   </div>
                 </div>
@@ -545,27 +600,34 @@ export default function FeedbackSessionModal({
             <Textarea
               ref={textareaRef}
               value={newMessage}
-              onChange={(e) => setNewMessage(e.target.value)}
+              onChange={(e) => {
+                console.log("📝 메시지 입력 변경:", e.target.value);
+                setNewMessage(e.target.value);
+              }}
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !e.shiftKey) {
+                  console.log("⌨️ Enter 키 눌림 - 메시지 전송");
                   e.preventDefault();
                   handleSendMessage();
                 }
               }}
               placeholder={
                 sessionEnded
-                  ? "세션이 종료되었습니다."
-                  : `${sessionData.mentionedAgent.name}에게 메시지를 보내세요...`
+                  ? "Session has ended."
+                  : `Send a message to ${sessionData.mentionedAgent.name}...`
               }
               disabled={isLoading || sessionEnded}
               className="flex-1 min-h-[40px] max-h-[80px] resize-none overflow-y-auto focus:ring-blue-500"
             />
             <Button
-              onClick={handleSendMessage}
+              onClick={() => {
+                console.log("🔘 전송 버튼 클릭됨");
+                handleSendMessage();
+              }}
               disabled={!newMessage.trim() || isLoading || sessionEnded}
               className="px-6 bg-blue-500 hover:bg-blue-600 text-white disabled:opacity-50"
             >
-              {isLoading ? "전송 중..." : "전송"}
+              {isLoading ? "Sending..." : "Send"}
             </Button>
           </div>
         </div>
@@ -574,7 +636,7 @@ export default function FeedbackSessionModal({
         {session.status === "ended" && (
           <div className="p-4 border-t border-gray-200 bg-gray-50 text-center">
             <p className="text-sm text-gray-600">
-              피드백 세션이 종료되었습니다.
+              The feedback session has ended.
             </p>
           </div>
         )}
@@ -588,15 +650,15 @@ export default function FeedbackSessionModal({
                   <MessageCircle className="w-6 h-6 text-red-600" />
                 </div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                  대화가 종료되었습니다
+                  Conversation has ended
                 </h3>
                 <p className="text-gray-600 mb-4">
-                  {sessionData.mentionedAgent.name}가 피드백 세션을
-                  종료했습니다.
+                  {sessionData.mentionedAgent.name} has ended
+                  the feedback session.
                 </p>
                 <div className="mb-4">
                   <p className="text-sm text-gray-500">
-                    {countdown}초 후 자동으로 닫힙니다
+                    Auto-closing in {countdown} seconds
                   </p>
                 </div>
                 <div className="flex gap-3 justify-center">
@@ -611,7 +673,7 @@ export default function FeedbackSessionModal({
                     variant="outline"
                     className="px-4 py-2"
                   >
-                    닫기
+                    Close
                   </Button>
                   <Button
                     onClick={async () => {
@@ -654,7 +716,7 @@ export default function FeedbackSessionModal({
                     className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2"
                     disabled={isLoading}
                   >
-                    {isLoading ? "시작 중..." : "새 대화 시작"}
+                    {isLoading ? "Starting..." : "Start New Conversation"}
                   </Button>
                 </div>
               </div>

@@ -8,6 +8,7 @@ import {
 } from "@/lib/types";
 import { getTeamById, getAgentById } from "@/lib/redis";
 import { getAgentState } from "@/lib/agent-state-utils";
+import { getBaseUrlFromNextRequest } from "@/lib/api-utils";
 import { canCreateFeedbackSession } from "@/lib/relationship-utils";
 import { findMemberById, getMemberActualId } from "@/lib/member-utils";
 
@@ -85,6 +86,8 @@ export async function POST(
           `team:${teamId}:active_feedback_sessions`
         );
         
+        const sessionsToRemove = [];
+
         for (const sessionId of activeSessionIds) {
           const sessionData = await redis.get(`feedback_session:${sessionId}`);
           if (sessionData) {
@@ -100,8 +103,25 @@ export async function POST(
                 console.log(`❌ ${role}(${participantId})가 이미 피드백 세션 중 (세션 ID: ${sessionId})`);
                 return true;
               }
+            } else {
+              // 비활성 세션이면 active 목록에서 제거 대상으로 표시
+              console.log(`🧹 비활성 세션 ${sessionId} (상태: ${session.status}) 정리 대상 발견`);
+              sessionsToRemove.push(sessionId);
             }
+          } else {
+            // 세션 데이터가 없으면 active 목록에서 제거 대상으로 표시
+            console.log(`🧹 존재하지 않는 세션 ${sessionId} 정리 대상 발견`);
+            sessionsToRemove.push(sessionId);
           }
+        }
+
+        // 오래된 세션들을 active 목록에서 제거
+        if (sessionsToRemove.length > 0) {
+          console.log(`🧹 ${sessionsToRemove.length}개 오래된 세션을 active 목록에서 제거 중...`);
+          for (const sessionId of sessionsToRemove) {
+            await redis.srem(`team:${teamId}:active_feedback_sessions`, sessionId);
+          }
+          console.log(`✅ 오래된 세션 정리 완료`);
         }
         
         return false;
@@ -268,7 +288,9 @@ export async function POST(
       console.log(`✅ 피드백 세션 생성 완료: ${sessionId}`);
 
       // 🔄 모든 참가자의 상태를 'feedback_session'으로 즉시 변경
-      const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
+      const host = request.headers.get('host');
+      const protocol = request.headers.get('x-forwarded-proto') || 'http';
+      const baseUrl = `${protocol}://${host}`;
 
       // 공통 상태 변경 함수
       const updateParticipantState = async (participantId: string, participantName: string, trigger: string) => {
@@ -345,6 +367,12 @@ export async function POST(
       ]);
 
       // 사용자가 첫 메시지를 남기는 경우 AI 응답 트리거
+      console.log("🔍 [서버] AI 트리거 조건 확인:", {
+        initiatorId,
+        hasMessage: !!message,
+        messageContent: message
+      });
+
       if (initiatorId === "Me" && message) {
         const userMessage = {
           id: `msg_${Date.now()}_user`,
@@ -364,12 +392,17 @@ export async function POST(
         );
 
         // AI 응답 트리거 (비동기)
+        console.log("🤖 [서버] 피드백 세션 생성 시 AI 응답 트리거 시작");
         setTimeout(async () => {
           try {
-            const aiResponse = await fetch(
-              `${
-                process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"
-              }/api/teams/${teamId}/feedback-sessions/${sessionId}/ai-process`,
+            const host = request.headers.get('host');
+            const protocol = request.headers.get('x-forwarded-proto') || 'http';
+            const baseUrl = `${protocol}://${host}`;
+            const aiUrl = `${baseUrl}/api/teams/${teamId}/feedback-sessions/${sessionId}/ai-process`;
+
+            console.log("🤖 [서버] AI 응답 API 호출:", aiUrl);
+
+            const aiResponse = await fetch(aiUrl,
               {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -379,6 +412,8 @@ export async function POST(
                 }),
               }
             );
+
+            console.log("🤖 [서버] AI 응답 API 상태:", aiResponse.status, aiResponse.ok);
 
             if (aiResponse.ok) {
               console.log(
@@ -606,7 +641,10 @@ export async function POST(
       }
 
       // 🔄 모든 참가자들의 상태를 idle로 되돌리기
-      const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
+      const host = request.headers.get('host');
+      const protocol = request.headers.get('x-forwarded-proto') || 'http';
+      const baseUrl = `${protocol}://${host}`;
+      console.log(`🔧 Using baseUrl for agent reset: ${baseUrl} (from host: ${host})`);
 
       console.log(`🔄 ${session.participants.length}개 참가자 상태 정리 시작`);
 
@@ -870,24 +908,26 @@ export async function POST(
 
           setTimeout(async () => {
             try {
-              const baseUrl =
-                process.env.NEXTAUTH_URL || "http://localhost:3000";
+              const host = request.headers.get('host');
+              const protocol = request.headers.get('x-forwarded-proto') || 'http';
+              const baseUrl = `${protocol}://${host}`;
+              console.log(`🔧 Using baseUrl for AI trigger: ${baseUrl}`);
               console.log(`🚀 AI 응답 트리거 실행: ${targetParticipant.name}`);
 
-              const aiResponse = await fetch(
-                `${baseUrl}/api/teams/${teamId}/feedback-sessions/${sessionId}/ai-process`,
-                {
-                  method: "POST",
-                  headers: {
-                    "Content-Type": "application/json",
-                    "User-Agent": "TeamBuilder-Internal",
-                  },
-                  body: JSON.stringify({
-                    triggerAgentId: targetParticipant.id,
-                    action: "respond",
-                  }),
-                }
-              );
+              const requestUrl = `${baseUrl}/api/teams/${teamId}/feedback-sessions/${sessionId}/ai-process`;
+              console.log(`🔗 Making AI trigger request to: ${requestUrl}`);
+
+              const aiResponse = await fetch(requestUrl, {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  "User-Agent": "TeamBuilder-Internal",
+                },
+                body: JSON.stringify({
+                  triggerAgentId: targetParticipant.id,
+                  action: "respond",
+                }),
+              });
 
               if (aiResponse.ok) {
                 const result = await aiResponse.json();

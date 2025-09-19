@@ -14,6 +14,7 @@ import {
   evaluateIdeaAction,
   getJsonResponse,
 } from "@/lib/openai";
+import { getDefaultBaseUrl } from "@/lib/api-utils";
 import {
   AgentStateInfo,
   getAgentState,
@@ -335,7 +336,7 @@ export async function handleGiveFeedbackRequestDirect(
       const targetId = requestData.payload.feedbackTarget;
       const member = team.members.find(m =>
         m.agentId === targetId ||
-        (m.isUser && (targetId === "Me" || targetId === "나"))
+        (m.isUser && targetId === "Me")
       );
 
       if (member) {
@@ -620,29 +621,35 @@ async function performIdeaEvaluation(
       team
     );
 
-    const response = await fetch(
-      `${
-        process.env.NEXTAUTH_URL || "http://localhost:3000"
-      }/api/teams/${teamId}/ideas/${targetIdea.id}/evaluate`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "User-Agent": "TeamBuilder-Internal",
-        },
-        body: JSON.stringify({
-          evaluator: agentId,
-          scores: {
-            novelty: evaluation.scores.novelty,
-            completeness: evaluation.scores.completeness,
-            quality: evaluation.scores.quality,
-          },
-          comment: evaluation.comment,
-        }),
-      }
-    );
+    try {
+      // 직접 함수 호출로 변경 (HTTP 호출 대신)
+      const { updateIdea, getIdeas } = await import("@/lib/redis");
 
-    if (response.ok) {
+      // 현재 아이디어 가져오기
+      const ideas = await getIdeas(teamId);
+      const currentIdea = ideas.find(idea => idea.id === targetIdea.id);
+      if (!currentIdea) {
+        throw new Error("아이디어를 찾을 수 없습니다");
+      }
+
+      // 평가 추가
+      const newEvaluation = {
+        evaluator: agentId,
+        scores: {
+          novelty: evaluation.scores.novelty,
+          completeness: evaluation.scores.completeness,
+          quality: evaluation.scores.quality,
+        },
+        comment: evaluation.comment,
+        timestamp: new Date().toISOString(),
+      };
+
+      const updatedIdea = {
+        ...currentIdea,
+        evaluations: [...currentIdea.evaluations, newEvaluation],
+      };
+
+      await updateIdea(teamId, targetIdea.id, updatedIdea);
       console.log(`✅ ${agentProfile.name} 아이디어 평가 완료`);
       await addChatMessage(teamId, {
         sender: agentId,
@@ -651,15 +658,16 @@ async function performIdeaEvaluation(
           content: `Evaluated the requested idea.`,
         },
       });
-    } else {
-      console.error(`❌ ${agentProfile.name} 평가 저장 실패:`, response.status);
+    } catch (error) {
+      console.error(`❌ ${agentProfile.name} 평가 저장 실패:`, error);
       await addChatMessage(teamId, {
         sender: agentId,
         type: "system",
         payload: {
-          content: `Failed to save evaluation. (Error: ${response.status})`,
+          content: `Failed to save evaluation.`,
         },
       });
+      throw error;
     }
   } catch (evaluationError) {
     console.error(`❌ ${agentProfile.name} 평가 수행 실패:`, evaluationError);
@@ -883,7 +891,7 @@ async function executeFeedbackSession(
       },
     };
 
-    const baseUrl = process.env.NEXTAUTH_URL || `http://localhost:3000`;
+    const baseUrl = getDefaultBaseUrl();
     const sessionResponse = await fetch(
       `${baseUrl}/api/teams/${teamId}/feedback-sessions`,
       {
@@ -969,37 +977,32 @@ async function updateAgentStatesForFeedbackSession(
   sessionId: string,
   feedbackStrategy: any
 ) {
-  const baseUrl = process.env.NEXTAUTH_URL || `http://localhost:3000`;
+  const baseUrl = getDefaultBaseUrl();
 
   // 피드백 제공자 상태 변경
   try {
-    const initiatorResponse = await fetch(
-      `${baseUrl}/api/teams/${teamId}/agent-states`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "User-Agent": "TeamBuilder-Internal",
-        },
-        body: JSON.stringify({
-          agentId: agentId,
-          currentState: "feedback_session",
-          taskType: "feedback_session",
-          taskDescription: `${targetMember.name}와 ${feedbackStrategy.feedbackType} 피드백 세션 진행 중`,
-          estimatedDuration: 300,
-          trigger: "autonomous",
-          sessionInfo: {
-            sessionId: sessionId,
-            participants: [agentProfile.name, targetMember.name],
-            feedbackType: feedbackStrategy.feedbackType,
-          },
-        }),
-      }
-    );
+    // 직접 함수 호출로 변경 (HTTP 호출 대신)
+    const { setAgentState } = await import("@/lib/agent-state-utils");
 
-    if (initiatorResponse.ok) {
-      console.log(`✅ ${agentProfile.name} 상태가 feedback_session으로 변경됨`);
-    }
+    await setAgentState(teamId, agentId, {
+      agentId: agentId,
+      currentState: "feedback_session",
+      lastStateChange: new Date().toISOString(),
+      isProcessing: true,
+      currentTask: {
+        type: "feedback_session",
+        description: `${targetMember.name}와 ${feedbackStrategy.feedbackType} 피드백 세션 진행 중`,
+        startTime: new Date().toISOString(),
+        estimatedDuration: 300,
+        trigger: "autonomous",
+        sessionInfo: {
+          sessionId: sessionId,
+          participants: [agentProfile.name, targetMember.name],
+        },
+      },
+    });
+
+    console.log(`✅ ${agentProfile.name} 상태가 feedback_session으로 변경됨`);
   } catch (error) {
     console.error(
       `❌ ${agentProfile.name} feedback_session 상태 변경 오류:`,
@@ -1010,35 +1013,30 @@ async function updateAgentStatesForFeedbackSession(
   // 대상 에이전트 상태 변경 (인간이 아닌 경우만)
   if (!targetMember.isUser) {
     try {
-      const targetResponse = await fetch(
-        `${baseUrl}/api/teams/${teamId}/agent-states`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "User-Agent": "TeamBuilder-Internal",
-          },
-          body: JSON.stringify({
-            agentId: targetMember.id,
-            currentState: "feedback_session",
-            taskType: "feedback_session",
-            taskDescription: `${agentProfile.name}와 ${feedbackStrategy.feedbackType} 피드백 세션 진행 중`,
-            estimatedDuration: 300,
-            trigger: "autonomous",
-            sessionInfo: {
-              sessionId: sessionId,
-              participants: [agentProfile.name, targetMember.name],
-              feedbackType: feedbackStrategy.feedbackType,
-            },
-          }),
-        }
-      );
+      // 직접 함수 호출로 변경 (HTTP 호출 대신)
+      const { setAgentState } = await import("@/lib/agent-state-utils");
 
-      if (targetResponse.ok) {
-        console.log(
-          `✅ ${targetMember.name} 상태가 feedback_session으로 변경됨`
-        );
-      }
+      await setAgentState(teamId, targetMember.id, {
+        agentId: targetMember.id,
+        currentState: "feedback_session",
+        lastStateChange: new Date().toISOString(),
+        isProcessing: true,
+        currentTask: {
+          type: "feedback_session",
+          description: `${agentProfile.name}와 ${feedbackStrategy.feedbackType} 피드백 세션 진행 중`,
+          startTime: new Date().toISOString(),
+          estimatedDuration: 300,
+          trigger: "autonomous",
+          sessionInfo: {
+            sessionId: sessionId,
+            participants: [agentProfile.name, targetMember.name],
+          },
+        },
+      });
+
+      console.log(
+        `✅ ${targetMember.name} 상태가 feedback_session으로 변경됨`
+      );
     } catch (error) {
       console.error(
         `❌ ${targetMember.name} feedback_session 상태 변경 오류:`,
@@ -1057,7 +1055,7 @@ async function triggerFirstFeedbackMessage(
   targetName: string
 ) {
   try {
-    const baseUrl = process.env.NEXTAUTH_URL || `http://localhost:3000`;
+    const baseUrl = getDefaultBaseUrl();
     const aiProcessResponse = await fetch(
       `${baseUrl}/api/teams/${teamId}/feedback-sessions/${sessionId}/ai-process`,
       {

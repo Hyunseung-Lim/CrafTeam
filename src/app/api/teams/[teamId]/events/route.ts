@@ -49,9 +49,15 @@ export async function GET(
       // 실시간 업데이트 체크 (2초마다 - 더 빠른 응답)
       let lastMessageTimestamp = "";
       let lastIdeaTimestamp = "";
+      let isClosed = false;
 
       const checkForUpdates = async () => {
         try {
+          // 연결이 이미 닫혔으면 처리하지 않음
+          if (isClosed) {
+            return;
+          }
+
           const [messages, ideas] = await Promise.all([
             getChatHistory(teamId),
             getIdeas(teamId),
@@ -86,20 +92,34 @@ export async function GET(
               latestMessageTimestamp,
             });
 
-            controller.enqueue(
-              `data: ${JSON.stringify({
-                type: "update",
-                messages: messageChanged ? messages : null,
-                ideas: ideaChanged ? ideas : null,
-                timestamp: new Date().toISOString(),
-              })}\n\n`
-            );
+            // 연결이 닫혔는지 다시 한번 체크
+            if (isClosed) {
+              return;
+            }
 
-            lastMessageTimestamp = latestMessageTimestamp;
-            lastIdeaTimestamp = ideaContentHash;
+            try {
+              controller.enqueue(
+                `data: ${JSON.stringify({
+                  type: "update",
+                  messages: messageChanged ? messages : null,
+                  ideas: ideaChanged ? ideas : null,
+                  timestamp: new Date().toISOString(),
+                })}\n\n`
+              );
+
+              lastMessageTimestamp = latestMessageTimestamp;
+              lastIdeaTimestamp = ideaContentHash;
+            } catch (enqueueError) {
+              console.log("🔌 SSE 연결이 닫혔음 - enqueue 실패:", enqueueError.message);
+              isClosed = true;
+            }
           }
         } catch (error) {
           console.error("업데이트 체크 실패:", error);
+          // 연결 문제인 경우 닫힌 것으로 표시
+          if (error.code === 'ERR_INVALID_STATE') {
+            isClosed = true;
+          }
         }
       };
 
@@ -109,15 +129,23 @@ export async function GET(
       // 연결 종료 시 정리
       request.signal.addEventListener("abort", () => {
         console.log("🔌 SSE 연결 종료:", teamId);
+        isClosed = true;
         clearInterval(interval);
         controller.close();
       });
 
       // 하트비트 (30초마다)
       const heartbeat = setInterval(() => {
-        controller.enqueue(
-          `data: ${JSON.stringify({ type: "heartbeat" })}\n\n`
-        );
+        if (!isClosed) {
+          try {
+            controller.enqueue(
+              `data: ${JSON.stringify({ type: "heartbeat" })}\n\n`
+            );
+          } catch (enqueueError) {
+            console.log("🔌 하트비트 실패 - 연결 닫힘:", enqueueError.message);
+            isClosed = true;
+          }
+        }
       }, 30000);
 
       request.signal.addEventListener("abort", () => {

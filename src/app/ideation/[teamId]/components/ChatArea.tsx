@@ -756,15 +756,15 @@ export default function ChatArea({
                                 : "bg-blue-500 text-white";
                             } else {
                               if (isRequest) {
-                                // 나에게 온 요청인지 확인
+                                // 나(Me)에게 온 요청인지 확인
                                 const userMember = team.members.find(m => m.isUser);
                                 const userName = userMember?.userProfile?.name || "Me";
                                 
                                 const isRequestToMe = message.payload && 
                                   typeof message.payload === "object" &&
                                   "mention" in message.payload &&
-                                  (message.payload.mention === "나" || 
-                                   message.payload.target === "나" ||
+                                  (message.payload.mention === "Me" ||
+                                   message.payload.target === "Me" ||
                                    message.payload.mention === userName ||
                                    message.payload.target === userName);
                                 return isRequestToMe 
@@ -1006,14 +1006,11 @@ export default function ChatArea({
                     const isInFeedback = isAgentInFeedbackSession(agent.id);
                     const hasRelationship = 
                       chatMode === "give_feedback" 
-                        ? canCreateFeedbackSession("나", agent.id, team)
-                        : canMakeRequest("나", agent.id, team);
+                        ? canCreateFeedbackSession("Me", agent.id, team)
+                        : canMakeRequest("Me", agent.id, team);
                     const isAvailable =
                       chatMode === "give_feedback"
                         ? !isInFeedback && hasRelationship
-                        : requestType
-                        ? canAgentPerformRole(agent, requestType) &&
-                          !isInFeedback && hasRelationship
                         : !isInFeedback && hasRelationship;
 
                     return (
@@ -1068,8 +1065,8 @@ export default function ChatArea({
                     const isInFeedback = isAgentInFeedbackSession(agent.id);
                     const hasRelationship = 
                       chatMode === "give_feedback" 
-                        ? canCreateFeedbackSession("나", agent.id, team)
-                        : canMakeRequest("나", agent.id, team);
+                        ? canCreateFeedbackSession("Me", agent.id, team)
+                        : canMakeRequest("Me", agent.id, team);
                     return chatMode === "give_feedback"
                       ? !isInFeedback && hasRelationship
                       : requestType
@@ -1187,8 +1184,7 @@ export default function ChatArea({
                 isGeneratingIdea ||
                 isCreatingFeedbackSession ||
                 activeTab !== "main" ||
-                !mentionedAgent ||
-                (chatMode === "make_request" && !requestType)
+                !mentionedAgent
               }
               className="self-center h-10 w-10 sm:h-11 sm:w-11 md:h-12 md:w-12"
             >

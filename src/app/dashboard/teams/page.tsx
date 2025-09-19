@@ -126,7 +126,7 @@ export default async function TeamsPage() {
                           <div className="flex justify-between items-start mb-1">
                             <span className="font-medium text-sm">
                               {member.isUser
-                                ? "나"
+                                ? "Me"
                                 : member.agent?.name || "알 수 없음"}
                             </span>
                             <div className="text-xs text-gray-600 text-right">

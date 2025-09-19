@@ -45,14 +45,14 @@ export default function ViewFeedbackSessionModal({
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [session?.messages]);
 
-  // 세션 데이터 로드
+  // Load session data
   useEffect(() => {
     if (!isOpen || !sessionId) return;
 
     const loadSession = async () => {
       setIsLoading(true);
       try {
-        // teamId는 URL에서 추출
+        // Extract teamId from URL
         const pathParts = window.location.pathname.split("/");
         const teamId = pathParts[pathParts.length - 1];
 
@@ -64,10 +64,10 @@ export default function ViewFeedbackSessionModal({
           const data = await response.json();
           setSession(data.session);
         } else {
-          console.error("세션 데이터 로드 실패:", response.status);
+          console.error("Failed to load session data:", response.status);
         }
       } catch (error) {
-        console.error("세션 데이터 로드 오류:", error);
+        console.error("Session data load error:", error);
       } finally {
         setIsLoading(false);
       }
@@ -76,7 +76,7 @@ export default function ViewFeedbackSessionModal({
     loadSession();
   }, [isOpen, sessionId]);
 
-  // 실시간 업데이트 (진행 중인 세션의 경우)
+  // Real-time updates (for active sessions)
   useEffect(() => {
     if (!session || session.status !== "active" || !sessionId) return;
 
@@ -99,14 +99,14 @@ export default function ViewFeedbackSessionModal({
           }
         }
       } catch (error) {
-        console.error("세션 실시간 업데이트 실패:", error);
+        console.error("Session real-time update failed:", error);
       }
-    }, 3000); // 3초마다 업데이트
+    }, 3000); // Update every 3 seconds
 
     return () => clearInterval(interval);
   }, [session, sessionId]);
 
-  // 세션 지속 시간 계산
+  // Calculate session duration
   const getSessionDuration = () => {
     if (!session) return "";
     const start = new Date(session.createdAt);
@@ -137,13 +137,13 @@ export default function ViewFeedbackSessionModal({
     );
   }
 
-  // AI끼리의 세션인지 확인
+  // Check if this is an AI-only session
   const isAIOnlySession = session.participants.every((p) => !p.isUser);
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-2xl w-full max-w-2xl h-[80vh] flex flex-col">
-        {/* 헤더 */}
+        {/* Header */}
         <div className="p-4 border-b border-gray-200 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2">
@@ -181,7 +181,7 @@ export default function ViewFeedbackSessionModal({
           </div>
         </div>
 
-        {/* 참가자 정보 */}
+        {/* Participant information */}
         <div className="p-3 bg-gray-50 border-b border-gray-200">
           <div className="flex items-center gap-2">
             <Users className="h-4 w-4 text-gray-500" />
@@ -211,13 +211,13 @@ export default function ViewFeedbackSessionModal({
           </div>
         </div>
 
-        {/* 메시지 목록 */}
+        {/* Message list */}
         <div className="flex-1 overflow-y-auto p-4 space-y-3">
           {session.messages.length === 0 ? (
             <div className="flex items-center justify-center h-full text-gray-500">
               <div className="text-center">
                 <MessageCircle className="h-12 w-12 mx-auto mb-2 text-gray-300" />
-                <p className="text-sm">아직 메시지가 없습니다</p>
+                <p className="text-sm">No messages yet</p>
               </div>
             </div>
           ) : (
@@ -263,7 +263,7 @@ export default function ViewFeedbackSessionModal({
                 }
               } else {
                 // 인간-에이전트 세션인 경우
-                if (message.sender === "나") {
+                if (message.sender === "Me") {
                   // 인간의 메시지: 파란색 + 오른쪽
                   messageStyle = "bg-blue-500 text-white";
                   isRightAligned = true;
@@ -286,7 +286,7 @@ export default function ViewFeedbackSessionModal({
                       isRightAligned ? "ml-auto" : "mr-auto"
                     }`}
                   >
-                    {/* 발신자 이름 표시 */}
+                    {/* Display sender name */}
                     <div
                       className={`text-xs mb-1 px-3 ${
                         isRightAligned
@@ -320,15 +320,15 @@ export default function ViewFeedbackSessionModal({
           <div ref={messagesEndRef} />
         </div>
 
-        {/* 하단 */}
+        {/* Bottom */}
         <div className="p-4 border-t border-gray-200 bg-gray-50 text-center">
           <p className="text-sm text-gray-600">
             {session.status === "active"
-              ? "진행 중인 피드백 세션을 구경하고 있습니다"
-              : "완료된 피드백 세션입니다"}
+              ? "Watching an ongoing feedback session"
+              : "This is a completed feedback session"}
           </p>
           <Button onClick={onClose} variant="outline" className="mt-2">
-            닫기
+            Close
           </Button>
         </div>
       </div>

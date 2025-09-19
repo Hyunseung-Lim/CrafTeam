@@ -22,6 +22,19 @@ export async function processRequestInBackground(
       `🔧 에이전트 ${agentId} 백그라운드 요청 처리 시작: ${requestData.type}`
     );
 
+    // 즉시 processing 상태로 설정하여 사용자에게 요청 수행중임을 표시
+    await setAgentState(teamId, agentId, {
+      agentId,
+      currentState: "action",
+      lastStateChange: new Date().toISOString(),
+      isProcessing: true,
+      currentTask: {
+        type: requestData.type,
+        description: `요청 수행 중: ${requestData.type}`,
+        startedAt: new Date().toISOString()
+      },
+    });
+
     if (requestData.type === "evaluate_idea") {
       await handleEvaluateIdeaRequestDirect(teamId, agentId, requestData);
     } else if (requestData.type === "generate_idea") {
@@ -132,32 +145,19 @@ async function transitionToIdleIfNotInFeedbackSession(
     }
 
     console.log(`😴 에이전트 ${agentId} → ${reason} Idle 상태 전환 시도 중...`);
-    const baseUrl = process.env.NEXTAUTH_URL || `http://localhost:3000`;
-    const response = await fetch(
-      `${baseUrl}/api/teams/${teamId}/agent-states`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "User-Agent": "TeamBuilder-Internal",
-        },
-        body: JSON.stringify({
-          agentId,
-          currentState: "idle",
-          forceClear: true,
-        }),
-      }
-    );
 
-    if (response.ok) {
+    try {
+      // 직접 함수 호출로 변경 (HTTP 호출 대신)
+      await setAgentState(teamId, agentId, {
+        agentId,
+        currentState: "idle",
+        lastStateChange: new Date().toISOString(),
+        isProcessing: false,
+        idleTimer: createNewIdleTimer(),
+      });
       console.log(`😴 에이전트 ${agentId} → ${reason} Idle 상태 전환 완료`);
-    } else {
-      const errorText = await response.text();
-      console.error(
-        `❌ 에이전트 ${agentId} ${reason} Idle 전환 실패:`,
-        response.status,
-        errorText
-      );
+    } catch (error) {
+      console.error(`❌ 에이전트 ${agentId} ${reason} Idle 전환 실패:`, error);
     }
   } catch (e) {
     console.error(`❌ 에이전트 ${agentId} ${reason} Idle 전환 실패:`, e);

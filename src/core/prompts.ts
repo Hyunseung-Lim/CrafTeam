@@ -398,7 +398,8 @@ const baseIdeationPromptText = `Generate one idea based on the provided instruct
 - function: The purpose or teleology of the object.
 - behavior: What the object does, expressed as a JSON object.
 - structure: The object's components and their relationships, as a JSON object.
-Write all content in English. Respond only in the following JSON format:`;
+
+Respond only in the following JSON format:`;
 
 // New ideation prompt
 export const newIdeationPrompt = (
@@ -1155,6 +1156,8 @@ ${currentIdeasInfo}
 - Consider avoiding duplicate work
 - For human users, consider their professional background and skills when crafting requests
 - For AI agents, consider their programmed personality and capabilities
+
+**IMPORTANT: Write all content in English. Your requestStrategy and contextToProvide must be in English.**
 
 Respond only in the following JSON format:
 {

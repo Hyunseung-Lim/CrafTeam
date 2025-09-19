@@ -253,7 +253,7 @@ export default function IdeaDetailModal({
 
   // 작성자 이름 가져오기 함수
   const getAuthorName = (authorId: string) => {
-    if (authorId === "나") return "나";
+    if (authorId === "Me") return "Me";
 
     const member = team?.members.find((m) => m.agentId === authorId);
     if (member && !member.isUser) {
@@ -265,7 +265,7 @@ export default function IdeaDetailModal({
   };
 
   const getEvaluatorName = (evaluatorId: string) => {
-    if (evaluatorId === "나") return "나";
+    if (evaluatorId === "Me") return "Me";
 
     const member = team?.members.find((m) => m.agentId === evaluatorId);
     if (member && !member.isUser) {
@@ -409,7 +409,7 @@ export default function IdeaDetailModal({
   const userRoles = userMember?.roles || [];
   const canUpdateIdeas = userRoles.includes("Idea Generation");
   const hasEvaluationRole = userRoles.includes("Idea Evaluation");
-  const hasEvaluationRelationship = team && idea ? canEvaluateIdea("나", idea.author, team) : false;
+  const hasEvaluationRelationship = team && idea ? canEvaluateIdea("Me", idea.author, team) : false;
   const canEvaluateIdeas = hasEvaluationRole && hasEvaluationRelationship;
 
   return (
@@ -498,12 +498,12 @@ export default function IdeaDetailModal({
                 <div className="flex items-center gap-3 mb-6">
                   <div
                     className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium ${
-                      idea.author === "나"
+                      idea.author === "Me"
                         ? "bg-green-500 text-white"
                         : "bg-blue-500 text-white"
                     }`}
                   >
-                    {idea.author === "나" ? "나" : idea.author[0]}
+                    {idea.author === "Me" ? "Me" : idea.author[0]}
                   </div>
                   <div>
                     <p className="font-medium text-gray-900">
@@ -790,13 +790,13 @@ export default function IdeaDetailModal({
                         <div className="flex items-center gap-2">
                           <div
                             className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium ${
-                              evaluation.evaluator === "나"
+                              evaluation.evaluator === "Me"
                                 ? "bg-green-500 text-white"
                                 : "bg-blue-500 text-white"
                             }`}
                           >
-                            {evaluation.evaluator === "나"
-                              ? "나"
+                            {evaluation.evaluator === "Me"
+                              ? "Me"
                               : evaluation.evaluator[0]}
                           </div>
                           <span className="text-sm font-medium text-gray-900">

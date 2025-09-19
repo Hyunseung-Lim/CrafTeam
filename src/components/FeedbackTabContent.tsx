@@ -73,7 +73,7 @@ export default function FeedbackTabContent({
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
-  // 메시지 로드
+  // Load messages
   const loadMessages = async () => {
     try {
       const response = await fetch(
@@ -84,7 +84,7 @@ export default function FeedbackTabContent({
         const result = await response.json();
         
         if (result.session?.messages) {
-          // 실제 대화 메시지만 필터링
+          // Filter only actual conversation messages
           const chatMessages = result.session.messages
             .filter((msg: any) => msg.type === "message")
             .map((msg: any) => {
@@ -97,21 +97,21 @@ export default function FeedbackTabContent({
               };
             });
 
-          // 메시지 수가 변경된 경우에만 상태 업데이트
+          // Update state only if message count changed
           if (chatMessages.length !== lastMessageCountRef.current) {
             setMessages(chatMessages);
             lastMessageCountRef.current = chatMessages.length;
 
-            // AI 응답이 추가되었으면 생성 상태 해제
+            // Disable generation state if AI response was added
             if (chatMessages.length > 0) {
               const lastMessage = chatMessages[chatMessages.length - 1];
-              if (lastMessage.sender !== "나") {
+              if (lastMessage.sender !== "Me") {
                 setIsGenerating(false);
               }
             }
           }
 
-          // 세션 종료 확인
+          // Check session end
           if (
             result.session.status === "completed" ||
             result.session.status === "ended"
@@ -119,37 +119,37 @@ export default function FeedbackTabContent({
             setSessionEnded(true);
             setIsGenerating(false);
             
-            // 종료 메시지 추가
+            // Add end message
             const endMessage: FeedbackMessage = {
               id: `end-${Date.now()}`,
-              sender: "시스템",
-              content: "피드백 세션이 종료되었습니다.",
+              sender: "System",
+              content: "The feedback session has ended.",
               timestamp: new Date().toISOString(),
               type: "system",
             };
             setMessages(prev => [...prev, endMessage]);
             
-            // AI가 세션을 종료한 경우 탭 자동 닫기
+            // Auto-close tab if AI ended session
             if (result.session.endedBy === "ai") {
-              console.log("AI가 피드백 세션을 종료했습니다. 탭을 닫습니다.");
+              console.log("AI ended the feedback session. Closing tab.");
               setTimeout(() => {
                 onClose();
-              }, 2000); // 종료 메시지를 보여준 후 2초 뒤에 탭 닫기
+              }, 2000); // Close tab 2 seconds after showing end message
             }
           }
         }
       }
     } catch (error) {
-      // 메시지 로드 실패 처리
+      // Handle message load failure
     }
   };
 
-  // 초기 메시지 설정
+  // Initial message setup
   useEffect(() => {
     if (tab.sessionData?.message && tab.type === "user_to_ai") {
       const initialMessage: FeedbackMessage = {
         id: "initial",
-        sender: "나",
+        sender: "Me",
         content: tab.sessionData.message,
         timestamp: new Date().toISOString(),
         type: "message",
@@ -160,11 +160,11 @@ export default function FeedbackTabContent({
       lastMessageCountRef.current = 1;
     }
 
-    // 초기 로드
+    // Initial load
     loadMessages();
   }, [tab.id]);
 
-  // 폴링 (3초마다)
+  // Polling (every 3 seconds)
   useEffect(() => {
     if (sessionEnded) return;
 
@@ -172,25 +172,25 @@ export default function FeedbackTabContent({
     return () => clearInterval(interval);
   }, [sessionEnded, tab.id, teamId]);
 
-  // 스크롤
+  // Scroll
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
 
-  // 메시지 전송
+  // Send message
   const handleSendMessage = async () => {
     if (!newMessage.trim() || sessionEnded || isLoading) return;
 
     const userMessage: FeedbackMessage = {
       id: `temp-${Date.now()}`,
-      sender: "나",
+      sender: "Me",
       content: newMessage.trim(),
       timestamp: new Date().toISOString(),
       type: "message",
     };
 
 
-    // 즉시 UI 업데이트
+    // Immediate UI update
     setMessages((prev) => [...prev, userMessage]);
     setNewMessage("");
     setIsLoading(true);
@@ -201,7 +201,7 @@ export default function FeedbackTabContent({
         action: "send_message",
         sessionId: tab.id,
         message: userMessage.content,
-        senderId: "나",
+        senderId: "Me",
       };
       
       
@@ -212,20 +212,20 @@ export default function FeedbackTabContent({
       });
 
       if (response.ok) {
-        // 1초 후 메시지 다시 로드
+        // Reload messages after 1 second
         setTimeout(loadMessages, 1000);
       } else {
         const errorText = await response.text();
-        console.error("메시지 전송 실패:", {
+        console.error("Message send failed:", {
           status: response.status,
           error: errorText,
         });
-        // 실패 시 메시지 제거
+        // Remove message on failure
         setMessages((prev) => prev.filter((m) => m.id !== userMessage.id));
         setIsGenerating(false);
       }
     } catch (error) {
-      console.error("메시지 전송 오류:", error);
+      console.error("Message send error:", error);
       setMessages((prev) => prev.filter((m) => m.id !== userMessage.id));
       setIsGenerating(false);
     } finally {
@@ -233,7 +233,7 @@ export default function FeedbackTabContent({
     }
   };
 
-  // 세션 종료
+  // End session
   const handleEndSession = async () => {
     try {
       await fetch(`/api/teams/${teamId}/feedback-sessions`, {
@@ -246,7 +246,7 @@ export default function FeedbackTabContent({
         }),
       });
     } catch (error) {
-      console.error("세션 종료 실패:", error);
+      console.error("Session end failed:", error);
     }
 
     onClose();
@@ -254,7 +254,7 @@ export default function FeedbackTabContent({
 
   return (
     <div className="h-full flex flex-col bg-white">
-      {/* 헤더 */}
+      {/* Header */}
       <div className="p-4 bg-orange-50 border-b border-orange-200">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -277,17 +277,17 @@ export default function FeedbackTabContent({
             className="text-orange-600 border-orange-300 hover:bg-orange-100"
             disabled={sessionEnded}
           >
-            피드백 종료
+            End Feedback
           </Button>
         </div>
       </div>
 
-      {/* 메시지 목록 */}
+      {/* Message list */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {messages.map((message) => {
           
-          const isMyMessage = message.sender === "나";
-          const isSystemMessage = message.sender === "시스템";
+          const isMyMessage = message.sender === "Me";
+          const isSystemMessage = message.sender === "System";
 
           if (isSystemMessage) {
             return (
@@ -337,7 +337,7 @@ export default function FeedbackTabContent({
           );
         })}
 
-        {/* AI 생성 중 스피너 */}
+        {/* AI generation spinner */}
         {isGenerating && (
           <div className="flex justify-start">
             <div className="bg-gray-100 rounded-2xl px-4 py-3">
@@ -359,7 +359,7 @@ export default function FeedbackTabContent({
         <div ref={messagesEndRef} />
       </div>
 
-      {/* 입력 영역 */}
+      {/* Input area */}
       <div className="p-4 border-t border-gray-200 bg-white">
         <div className="flex gap-2 items-end">
           <Textarea
@@ -373,7 +373,7 @@ export default function FeedbackTabContent({
               }
             }}
             placeholder={
-              sessionEnded ? "세션이 종료되었습니다." : "메시지를 입력하세요..."
+              sessionEnded ? "Session has ended." : "Enter your message..."
             }
             disabled={isLoading || sessionEnded}
             className="flex-1 min-h-[40px] max-h-[80px] resize-none overflow-y-auto focus:ring-orange-500"
@@ -383,7 +383,7 @@ export default function FeedbackTabContent({
             disabled={!newMessage.trim() || isLoading || sessionEnded}
             className="px-6 bg-orange-500 hover:bg-orange-600 text-white"
           >
-            전송
+            Send
           </Button>
         </div>
       </div>

@@ -7,6 +7,7 @@ import {
   AIAgent,
 } from "@/lib/types";
 import { getMemberDisplayName } from "@/lib/member-utils";
+import { createTeamIdManager } from "@/lib/id-manager";
 import { Button } from "@/components/ui/button";
 import { Plus, User, XIcon } from "lucide-react";
 
@@ -84,11 +85,18 @@ export function RelationshipGraph({
     if (!connectingFrom) {
       setConnectingFrom(nodeId);
     } else if (connectingFrom !== nodeId) {
+      // 멤버 슬롯 ID를 실제 저장된 ID로 변환해서 관계 확인
+      const fromMember = members.find((m) => m.id === connectingFrom);
+      const toMember = members.find((m) => m.id === nodeId);
+
+      const fromId = fromMember?.isUser ? "Me" : fromMember?.agentId || connectingFrom;
+      const toId = toMember?.isUser ? "Me" : toMember?.agentId || nodeId;
+
       // 이미 관계가 있는지 확인 (양방향)
       const existing = relationships.find(
         (r) =>
-          (r.from === connectingFrom && r.to === nodeId) ||
-          (r.from === nodeId && r.to === connectingFrom)
+          (r.from === fromId && r.to === toId) ||
+          (r.from === toId && r.to === fromId)
       );
       if (existing) {
         // 이미 관계가 있으면 취소
@@ -254,17 +262,49 @@ export function RelationshipGraph({
 
         {/* 관계 엣지 */}
         {relationships.filter(rel => rel.type !== "NULL").map((rel, index) => {
-          // 이름이나 ID로 멤버를 찾아서 member.id로 노드 위치 가져오기
-          const fromMember = members.find(
-            (m) =>
-              (m.isUser && rel.from === "나") ||
-              (!m.isUser && (m.id === rel.from || m.agentId === rel.from || m.agent?.name === rel.from))
-          );
-          const toMember = members.find(
-            (m) =>
-              (m.isUser && rel.to === "나") ||
-              (!m.isUser && (m.id === rel.to || m.agentId === rel.to || m.agent?.name === rel.to))
-          );
+          // ID 매니저를 사용한 안정적인 멤버 찾기
+          const fakeTeam: import("@/lib/types").Team = {
+            id: 'temp',
+            ownerId: 'temp',
+            teamName: 'temp',
+            createdAt: new Date(),
+            members: members.map(m => ({
+              agentId: m.isUser ? null : (m.agentId || m.id),
+              roles: m.roles,
+              isUser: m.isUser,
+              userProfile: m.isUser ? {
+                name: "Me",
+                skills: "",
+                personality: "",
+                workStyle: "",
+                preferences: "",
+                dislikes: ""
+              } : undefined
+            })),
+            relationships
+          };
+          const idManager = createTeamIdManager(fakeTeam);
+
+          // 저장된 관계 ID를 슬롯 ID로 역변환해서 멤버 찾기
+          const fromMember = members.find(m => {
+            if (m.isUser) {
+              return rel.from === "Me";
+            } else {
+              return m.id === rel.from || m.agentId === rel.from ||
+                     idManager.isSameMember(m.id || '', rel.from) ||
+                     idManager.isSameMember(m.agentId || '', rel.from);
+            }
+          });
+
+          const toMember = members.find(m => {
+            if (m.isUser) {
+              return rel.to === "Me";
+            } else {
+              return m.id === rel.to || m.agentId === rel.to ||
+                     idManager.isSameMember(m.id || '', rel.to) ||
+                     idManager.isSameMember(m.agentId || '', rel.to);
+            }
+          });
 
           if (!fromMember || !toMember) return null;
 

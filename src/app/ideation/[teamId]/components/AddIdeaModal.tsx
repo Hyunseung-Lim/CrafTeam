@@ -189,7 +189,7 @@ export default function AddIdeaModal({
                 onChange={(e) => handleTextareaChange(e, (value) => onFormDataChange({ ...formData, object: value }))}
                 className="w-full p-3 border border-gray-300 rounded-lg resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 rows={1}
-                placeholder="아이디어의 대상이나 객체에 대해 설명하세요..."
+                placeholder="Describe the target or object of your idea..."
               />
             </div>
 
@@ -201,7 +201,7 @@ export default function AddIdeaModal({
                 onChange={(e) => handleTextareaChange(e, (value) => onFormDataChange({ ...formData, function: value }))}
                 className="w-full p-3 border border-gray-300 rounded-lg resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 rows={1}
-                placeholder="아이디어의 기능이나 목적에 대해 설명하세요..."
+                placeholder="Describe the function or purpose of your idea..."
               />
             </div>
 
@@ -226,7 +226,7 @@ export default function AddIdeaModal({
                       value={pair.key}
                       onChange={(e) => updateBehaviorPair(index, 'key', e.target.value)}
                       className="flex-1 mr-2 p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="행동 요소명 (예: 동작, 반응, ...)"
+                      placeholder="Behavior element name (e.g., action, reaction, ...)"
                     />
                     {behaviorPairs.length > 1 && (
                       <button
@@ -243,7 +243,7 @@ export default function AddIdeaModal({
                     onChange={(e) => handleTextareaChange(e, (value) => updateBehaviorPair(index, 'value', value))}
                     className="w-full p-3 border border-gray-300 rounded-lg resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     rows={1}
-                    placeholder={`${pair.key || '행동 요소'}에 대한 설명을 입력하세요...`}
+                    placeholder={`Enter description for ${pair.key || 'behavior element'}...`}
                   />
                 </div>
               ))}
@@ -270,7 +270,7 @@ export default function AddIdeaModal({
                       value={pair.key}
                       onChange={(e) => updateStructurePair(index, 'key', e.target.value)}
                       className="flex-1 mr-2 p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="구조 요소명 (예: 형태, 배치, ...)"
+                      placeholder="Structure element name (e.g., shape, layout, ...)"
                     />
                     {structurePairs.length > 1 && (
                       <button
@@ -287,7 +287,7 @@ export default function AddIdeaModal({
                     onChange={(e) => handleTextareaChange(e, (value) => updateStructurePair(index, 'value', value))}
                     className="w-full p-3 border border-gray-300 rounded-lg resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     rows={1}
-                    placeholder={`${pair.key || '구조 요소'}에 대한 설명을 입력하세요...`}
+                    placeholder={`Enter description for ${pair.key || 'structure element'}...`}
                   />
                 </div>
               ))}

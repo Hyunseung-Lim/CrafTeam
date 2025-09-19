@@ -133,12 +133,12 @@ export default function IdeaList({
                   <span className="text-xs text-gray-500">Creator</span>
                   <div
                     className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium ${
-                      idea.author === "나"
+                      idea.author === "Me"
                         ? "bg-green-500 text-white"
                         : "bg-blue-500 text-white"
                     }`}
                   >
-                    {authorName === "나" ? "나" : authorName[0]}
+                    {authorName === "Me" ? "M" : authorName[0]}
                   </div>
                   <span className="text-xs font-medium text-gray-700">
                     {authorName}
