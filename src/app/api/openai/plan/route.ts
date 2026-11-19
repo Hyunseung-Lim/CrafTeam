@@ -53,7 +53,7 @@ Your planning should demonstrate authentic personality-driven decision making th
           content: prompt,
         },
       ],
-      temperature: 0.7,
+      temperature: 0.8,
       max_tokens: 800,
     });
 

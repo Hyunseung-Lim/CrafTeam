@@ -1,16 +1,20 @@
-# AI Team Builder
+# CrafTeam
 
-A creative team building platform powered by AI agents.
+CrafTeam is a technology probe for forming human–multi-agent teams and ideating with them.
 
 ## Project Overview
 
-This is an experimental web application where users can create AI agents with distinct personalities and roles, organize them into teams, and generate ideas for design projects.
+CrafTeam is a web application where users create AI agents with distinct personas and roles, organize them into a team, carry out design ideation with the team, and review how the team worked. It was developed for the following paper:
+
+> Hyunseung Lim, Dasom Choi, Sooyohn Nam, Bogoan Kim, and Hwajung Hong. 2026. Understanding Human–Multi-Agent Team Formation for Creative Work. In *Proceedings of the 2026 CHI Conference on Human Factors in Computing Systems*. https://doi.org/10.1145/3772318.3791166
+
+This repository is the English version of the system. In the study reported in the paper, the prompts instructed the agents to write in Korean.
 
 ## Key Features
 
 - 🤖 **AI Agent Creation**: Create unique AI agents with names, ages, genders, personalities, values, and design styles
 - 👥 **Team Building**: Select created agents and assign roles to form teams
-- 💬 **Idea Generation**: Generate creative design ideas through conversations with your team (coming soon)
+- 💬 **Team-Based Ideation**: Generate, evaluate, and give feedback on design ideas together with your team
 - 🔐 **User Authentication**: Secure login/signup via NextAuth
 
 ## Tech Stack
@@ -22,6 +26,13 @@ This is an experimental web application where users can create AI agents with di
 - **Authentication**: NextAuth.js
 - **UI Components**: Custom components (shadcn/ui style)
 - **Icons**: Lucide React
+- **Language model**: OpenAI gpt-4o (prompts in `src/core/prompts.ts`, calls in `src/lib/openai.ts`)
+
+## Model Settings
+
+- Temperature 0.8 for agent actions (planning, idea generation, idea evaluation, feedback, and request)
+- Temperature 0.5 for general operations (memory updates, persona summaries, and feedback session summaries)
+- An agent in the Wait state returns to planning after 30–60 seconds
 
 ## Installation & Setup
 
@@ -29,7 +40,7 @@ This is an experimental web application where users can create AI agents with di
 
 ```bash
 git clone <repository-url>
-cd teambuilder
+cd CrafTeam
 ```
 
 ### 2. Install dependencies
@@ -40,14 +51,9 @@ npm install
 
 ### 3. Configure environment variables
 
-Create a `.env.local` file by referencing `.env.local.example` and fill in the required variables:
+Create a `.env.local` file with the following variables:
 
-```bash
-cp .env.local.example .env.local
-```
-
-Required environment variables:
-
+- `OPENAI_API_KEY`: OpenAI API key
 - `UPSTASH_REDIS_REST_URL`: Upstash Redis REST URL
 - `UPSTASH_REDIS_REST_TOKEN`: Upstash Redis REST Token
 - `NEXTAUTH_URL`: NextAuth URL (use http://localhost:3000 for development)
@@ -114,15 +120,7 @@ src/
 
 ### AgentRole
 
-- Propose idea, Develop idea, Evaluate idea, Discard idea, Discuss, Give feedback
-
-## Roadmap
-
-- [ ] Integrate OpenAI API for real AI chat functionality
-- [ ] Save and retrieve conversation logs per team
-- [ ] Edit and delete agents and teams
-- [ ] Team performance analytics and statistics
-- [ ] Real-time collaboration features
+- Idea Generation, Idea Evaluation, Feedback, Request
 
 ## License
 
