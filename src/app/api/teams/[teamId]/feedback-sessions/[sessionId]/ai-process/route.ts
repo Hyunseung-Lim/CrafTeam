@@ -461,7 +461,8 @@ export async function POST(
             currentTask: {
               type: "feedback_session",
               description: `${otherParticipant.name}와 피드백 세션 진행 중`,
-              startedAt: new Date().toISOString(),
+              startTime: new Date().toISOString(),
+              estimatedDuration: 300,
               sessionInfo: {
                 sessionId,
                 participants: session.participants.map((p) => p.name),

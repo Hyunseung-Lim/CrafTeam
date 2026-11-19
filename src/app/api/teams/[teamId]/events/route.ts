@@ -110,14 +110,14 @@ export async function GET(
               lastMessageTimestamp = latestMessageTimestamp;
               lastIdeaTimestamp = ideaContentHash;
             } catch (enqueueError) {
-              console.log("🔌 SSE 연결이 닫혔음 - enqueue 실패:", enqueueError.message);
+              console.log("🔌 SSE 연결이 닫혔음 - enqueue 실패:", enqueueError instanceof Error ? enqueueError.message : enqueueError);
               isClosed = true;
             }
           }
         } catch (error) {
           console.error("업데이트 체크 실패:", error);
           // 연결 문제인 경우 닫힌 것으로 표시
-          if (error.code === 'ERR_INVALID_STATE') {
+          if ((error as { code?: string } | null)?.code === 'ERR_INVALID_STATE') {
             isClosed = true;
           }
         }
@@ -142,7 +142,7 @@ export async function GET(
               `data: ${JSON.stringify({ type: "heartbeat" })}\n\n`
             );
           } catch (enqueueError) {
-            console.log("🔌 하트비트 실패 - 연결 닫힘:", enqueueError.message);
+            console.log("🔌 하트비트 실패 - 연결 닫힘:", enqueueError instanceof Error ? enqueueError.message : enqueueError);
             isClosed = true;
           }
         }

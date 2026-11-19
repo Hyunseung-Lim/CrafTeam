@@ -31,7 +31,8 @@ export async function processRequestInBackground(
       currentTask: {
         type: requestData.type,
         description: `요청 수행 중: ${requestData.type}`,
-        startedAt: new Date().toISOString()
+        startTime: new Date().toISOString(),
+        estimatedDuration: 300,
       },
     });
 

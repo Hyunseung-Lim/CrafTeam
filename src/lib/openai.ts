@@ -741,7 +741,7 @@ ${agentContext}`,
       console.log(`🔍 원래 계획된 행동: "${planResult.action}"`);
 
       // 수행 가능한 대안 행동 찾기
-      const availableActions = [];
+      const availableActions: Array<"generate_idea" | "evaluate_idea" | "give_feedback" | "make_request"> = [];
       if (hasRole("Idea Generation")) {
         availableActions.push("generate_idea");
       }
@@ -790,7 +790,7 @@ ${agentContext}`,
       console.log(`🔍 ${userProfile.name}의 실제 역할:`, agentRoles);
 
       // 동일한 대안 행동 선택 로직 적용
-      const availableActions = [];
+      const availableActions: Array<"generate_idea" | "evaluate_idea" | "give_feedback" | "make_request"> = [];
       if (hasRole("Idea Generation")) availableActions.push("generate_idea");
       if (hasRole("Idea Evaluation") && teamContext.currentIdeasCount > 0) availableActions.push("evaluate_idea");
       if (hasRole("Feedback") && canGiveFeedback) availableActions.push("give_feedback");

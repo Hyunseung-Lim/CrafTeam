@@ -94,7 +94,7 @@ export async function resetAllAgentStates(teamId: string) {
     console.error(`❌ 팀 ${teamId} 상태 초기화 실패:`, error);
     return {
       success: false,
-      error: error.message,
+      error: error instanceof Error ? error.message : String(error),
     };
   }
 }
@@ -117,6 +117,6 @@ export async function resetAgentState(teamId: string, agentId: string) {
     return { success: true };
   } catch (error) {
     console.error(`❌ 에이전트 ${agentId} 상태 초기화 실패:`, error);
-    return { success: false, error: error.message };
+    return { success: false, error: error instanceof Error ? error.message : String(error) };
   }
 }

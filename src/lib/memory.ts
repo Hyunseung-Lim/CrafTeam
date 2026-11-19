@@ -295,11 +295,11 @@ async function updateAgentState(
       ...(state === "idle" && { idleTimer: createNewIdleTimer() }),
       ...(taskDescription && {
         currentTask: {
-          type: state === "reflecting" ? "reflecting" : "thinking",
+          type: (state === "reflecting" ? "reflecting" : "thinking") as "reflecting" | "thinking",
           description: taskDescription || (state === "reflecting" ? "경험을 바탕으로 자기 성찰 중" : ""),
           startTime: new Date().toISOString(),
           estimatedDuration: state === "reflecting" ? 10 : 30,
-          trigger: "autonomous",
+          trigger: "autonomous" as const,
         }
       })
     };

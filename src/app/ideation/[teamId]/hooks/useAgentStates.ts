@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
 // 에이전트 상태 타입 정의
 export interface AgentStateInfo {
@@ -61,14 +61,17 @@ export function useAgentStates(teamId: string) {
   const [userState, setUserState] = useState<AgentStateInfo | null>(null);
   const [timers, setTimers] = useState<Map<string, number>>(new Map());
   const [isConnected, setIsConnected] = useState(true); // 연결 상태 추가
+  // 폴링 effect 와 forceRefresh 가 함께 쓰는 값
+  const isRequestInProgressRef = useRef(false);
+  const consecutiveErrorsRef = useRef(0);
 
   useEffect(() => {
     if (!teamId) return;
 
     let isActive = true;
     let timeoutId: NodeJS.Timeout | null = null;
-    let isRequestInProgress = false;
-    let consecutiveErrors = 0; // 연속 오류 횟수 추적
+    isRequestInProgressRef.current = false;
+    consecutiveErrorsRef.current = 0; // 연속 오류 횟수 추적
 
     // 전역 강제 새로고침 이벤트 리스너
     const handleForceRefresh = (event: CustomEvent) => {
@@ -93,7 +96,7 @@ export function useAgentStates(teamId: string) {
           setUserState(null);
         }
 
-        consecutiveErrors = 0;
+        consecutiveErrorsRef.current = 0;
         setIsConnected(true);
       }
     };
@@ -101,9 +104,9 @@ export function useAgentStates(teamId: string) {
     window.addEventListener('forceAgentStateRefresh', handleForceRefresh as EventListener);
 
     const fetchAgentStates = async () => {
-      if (!isActive || isRequestInProgress) return;
+      if (!isActive || isRequestInProgressRef.current) return;
 
-      isRequestInProgress = true;
+      isRequestInProgressRef.current = true;
 
       try {
         const response = await fetch(`/api/teams/${teamId}/agent-states`);
@@ -135,16 +138,16 @@ export function useAgentStates(teamId: string) {
           }
 
           // 연결 성공 시 연속 오류 횟수 초기화
-          consecutiveErrors = 0;
+          consecutiveErrorsRef.current = 0;
           setIsConnected(true);
         } else {
           console.error(
             `에이전트 상태 API 응답 실패: ${response.status} ${response.statusText}`
           );
-          consecutiveErrors++;
+          consecutiveErrorsRef.current++;
 
           // 3회 연속 실패 시 연결 상태를 false로 설정
-          if (consecutiveErrors >= 3) {
+          if (consecutiveErrorsRef.current >= 3) {
             setIsConnected(false);
           }
 
@@ -152,10 +155,10 @@ export function useAgentStates(teamId: string) {
         }
       } catch (error) {
         console.error("에이전트 상태 조회 실패:", error);
-        consecutiveErrors++;
+        consecutiveErrorsRef.current++;
 
         // 3회 연속 실패 시 연결 상태를 false로 설정
-        if (consecutiveErrors >= 3) {
+        if (consecutiveErrorsRef.current >= 3) {
           setIsConnected(false);
         }
 
@@ -163,15 +166,15 @@ export function useAgentStates(teamId: string) {
         console.error("에러 상세 정보:", {
           name: error instanceof Error ? error.name : "Unknown",
           message: error instanceof Error ? error.message : String(error),
-          consecutiveErrors,
+          consecutiveErrors: consecutiveErrorsRef.current,
         });
       } finally {
-        isRequestInProgress = false;
+        isRequestInProgressRef.current = false;
 
         // 요청 완료 후 연속 오류 횟수에 따라 대기 시간 조정
         const waitTime =
-          consecutiveErrors > 0
-            ? Math.min(10000, 2000 * consecutiveErrors) // 오류 시 최대 10초 대기
+          consecutiveErrorsRef.current > 0
+            ? Math.min(10000, 2000 * consecutiveErrorsRef.current) // 오류 시 최대 10초 대기
             : 3000; // 정상 시 3초 간격
 
         if (isActive) {
@@ -245,10 +248,10 @@ export function useAgentStates(teamId: string) {
 
   // 강제 새로고침 함수
   const forceRefresh = async () => {
-    if (!teamId || isRequestInProgress) return;
+    if (!teamId || isRequestInProgressRef.current) return;
 
     console.log("🔄 강제 새로고침 시작...");
-    isRequestInProgress = true;
+    isRequestInProgressRef.current = true;
 
     try {
       const response = await fetch(`/api/teams/${teamId}/agent-states`);
@@ -272,7 +275,7 @@ export function useAgentStates(teamId: string) {
           setUserState(null);
         }
 
-        consecutiveErrors = 0;
+        consecutiveErrorsRef.current = 0;
         setIsConnected(true);
 
         console.log("✅ 강제 새로고침 완료:", statesMap);
@@ -280,7 +283,7 @@ export function useAgentStates(teamId: string) {
     } catch (error) {
       console.error("❌ 강제 새로고침 실패:", error);
     } finally {
-      isRequestInProgress = false;
+      isRequestInProgressRef.current = false;
     }
   };
 
